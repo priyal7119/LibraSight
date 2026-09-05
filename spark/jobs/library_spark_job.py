@@ -6,8 +6,6 @@ from pyspark.sql.functions import (
     count,
     sum,
     avg,
-    max,
-    min,
     year,
     month
 )
@@ -34,319 +32,408 @@ OUTPUT_DIR = (
 
 
 # --------------------------------------------------
-# 2. Create Spark Session
+# 2. Write DataFrame to Parquet
 # --------------------------------------------------
 
+def write_dataframe_to_parquet(
+    df,
+    output_dir: Path
+) -> None:
 
-def write_dataframe_to_parquet(df, output_dir: Path) -> None:
-    """Write a Spark or pandas DataFrame to a parquet file without requiring winutils."""
     output_dir = Path(output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+
+    output_dir.mkdir(
+        parents=True,
+        exist_ok=True
+    )
 
     if hasattr(df, "toPandas"):
         pandas_df = df.toPandas()
     else:
         pandas_df = df
 
-    parquet_file = output_dir / "part-00000.parquet"
-    pandas_df.to_parquet(parquet_file, index=False)
-
-
-# --------------------------------------------------
-# 2. Create Spark Session
-# --------------------------------------------------
-
-spark = (
-    SparkSession.builder
-    .appName("LibraSightLibraryAnalytics")
-    .master("local[*]")
-    .config("spark.hadoop.fs.permissions.umask-mode", "022") 
-    .config("spark.hadoop.fs.file.impl", "org.apache.hadoop.fs.LocalFileSystem") 
-    .getOrCreate()
-)
-
-print("=" * 60)
-print("LIBRASIGHT - PYSPARK PROCESSING")
-print("=" * 60)
-
-
-# --------------------------------------------------
-# 3. Read Parquet
-# --------------------------------------------------
-
-print("\nReading cleaned Parquet data...")
-
-df = spark.read.parquet(
-    str(INPUT_FILE)
-)
-
-print("Parquet loaded successfully.")
-
-# --------------------------------------------------
-# 4. Display schema
-# --------------------------------------------------
-
-print("\nSpark DataFrame Schema:")
-
-df.printSchema()
-
-
-# --------------------------------------------------
-# 5. Display record count
-# --------------------------------------------------
-
-print(
-    f"\nTotal records: {df.count()}"
-)
-
-
-# --------------------------------------------------
-# 6. Display sample records
-# --------------------------------------------------
-
-print("\nSample records:")
-
-df.show(5, truncate=False)
-
-
-# --------------------------------------------------
-# 7. BOOK ANALYTICS
-# --------------------------------------------------
-
-print("\n--- Book Analytics ---")
-
-book_analytics = (
-    df.groupBy(
-        "book_id",
-        "book_title",
-        "author"
+    parquet_file = (
+        output_dir
+        / "part-00000.parquet"
     )
-    .agg(
-        count("transaction_id").alias(
-            "booking_count"
-        ),
-        sum("fine_amount").alias(
-            "total_fine"
-        ),
-        avg("renewal_count").alias(
-            "average_renewals"
+
+    pandas_df.to_parquet(
+        parquet_file,
+        index=False
+    )
+
+
+# --------------------------------------------------
+# 3. Main Spark processing function
+# --------------------------------------------------
+
+def run_spark_processing():
+
+    print("=" * 60)
+    print("LIBRASIGHT - PYSPARK PROCESSING")
+    print("=" * 60)
+
+    # --------------------------------------------------
+    # Create Spark Session
+    # --------------------------------------------------
+
+    spark = (
+        SparkSession.builder
+        .appName("LibraSightLibraryAnalytics")
+        .master("local[*]")
+        .config(
+            "spark.hadoop.fs.permissions.umask-mode",
+            "022"
         )
-    )
-)
-
-book_analytics.orderBy(
-    "booking_count",
-    ascending=False
-).show(10, truncate=False)
-
-
-# --------------------------------------------------
-# 8. GENRE ANALYTICS
-# --------------------------------------------------
-
-print("\n--- Genre Analytics ---")
-
-genre_analytics = (
-    df.groupBy("genre")
-    .agg(
-        count("transaction_id").alias(
-            "transaction_count"
-        ),
-        avg("fine_amount").alias(
-            "average_fine"
+        .config(
+            "spark.hadoop.fs.file.impl",
+            "org.apache.hadoop.fs.LocalFileSystem"
         )
+        .getOrCreate()
     )
-)
 
-genre_analytics.orderBy(
-    "transaction_count",
-    ascending=False
-).show(truncate=False)
+    try:
 
+        # --------------------------------------------------
+        # Read Parquet
+        # --------------------------------------------------
 
-# --------------------------------------------------
-# 9. READER ANALYTICS
-# --------------------------------------------------
+        print("\nReading cleaned Parquet data...")
 
-print("\n--- Reader Analytics ---")
+        if not INPUT_FILE.exists():
+            raise FileNotFoundError(
+                f"Input Parquet file not found: {INPUT_FILE}"
+            )
 
-reader_analytics = (
-    df.groupBy(
-        "reader_type"
-    )
-    .agg(
-        count("transaction_id").alias(
-            "transaction_count"
-        ),
-        avg("renewal_count").alias(
-            "average_renewals"
+        df = spark.read.parquet(
+            str(INPUT_FILE)
         )
-    )
-)
 
-reader_analytics.orderBy(
-    "transaction_count",
-    ascending=False
-).show(truncate=False)
+        print("Parquet loaded successfully.")
 
+        # --------------------------------------------------
+        # Display schema
+        # --------------------------------------------------
 
-# --------------------------------------------------
-# 10. BRANCH ANALYTICS
-# --------------------------------------------------
+        print("\nSpark DataFrame Schema:")
 
-print("\n--- Branch Analytics ---")
+        df.printSchema()
 
-branch_analytics = (
-    df.groupBy(
-        "branch_id",
-        "branch_name",
-        "city"
-    )
-    .agg(
-        count("transaction_id").alias(
-            "transaction_count"
-        ),
-        sum("fine_amount").alias(
-            "total_fine"
+        # --------------------------------------------------
+        # Display record count
+        # --------------------------------------------------
+
+        total_records = df.count()
+
+        print(
+            f"\nTotal records: {total_records}"
         )
-    )
-)
 
-branch_analytics.orderBy(
-    "transaction_count",
-    ascending=False
-).show(10, truncate=False)
+        # --------------------------------------------------
+        # Display sample records
+        # --------------------------------------------------
 
+        print("\nSample records:")
 
-# --------------------------------------------------
-# 11. COLLECTION ANALYTICS
-# --------------------------------------------------
-
-print("\n--- Collection Analytics ---")
-
-collection_analytics = (
-    df.groupBy(
-        "collection_status"
-    )
-    .agg(
-        count("book_id").alias(
-            "book_transaction_count"
-        ),
-        avg("available_copies").alias(
-            "average_available_copies"
+        df.show(
+            5,
+            truncate=False
         )
-    )
-)
 
-collection_analytics.show(
-    truncate=False
-)
+        # --------------------------------------------------
+        # BOOK ANALYTICS
+        # --------------------------------------------------
 
+        print("\n--- Book Analytics ---")
 
-# --------------------------------------------------
-# 12. DATE-BASED ANALYTICS
-# --------------------------------------------------
-
-print("\n--- Yearly Reading Trends ---")
-
-yearly_trends = (
-    df.groupBy(
-        year("checkout_date").alias(
-            "checkout_year"
+        book_analytics = (
+            df.groupBy(
+                "book_id",
+                "book_title",
+                "author"
+            )
+            .agg(
+                count("transaction_id").alias(
+                    "booking_count"
+                ),
+                sum("fine_amount").alias(
+                    "total_fine"
+                ),
+                avg("renewal_count").alias(
+                    "average_renewals"
+                )
+            )
         )
-    )
-    .agg(
-        count("transaction_id").alias(
-            "transaction_count"
+
+        book_analytics.orderBy(
+            "booking_count",
+            ascending=False
+        ).show(
+            10,
+            truncate=False
         )
-    )
-    .orderBy("checkout_year")
-)
 
-yearly_trends.show()
+        # --------------------------------------------------
+        # GENRE ANALYTICS
+        # --------------------------------------------------
 
+        print("\n--- Genre Analytics ---")
 
-print("\n--- Monthly Reading Trends ---")
-
-monthly_trends = (
-    df.groupBy(
-        year("checkout_date").alias(
-            "checkout_year"
-        ),
-        month("checkout_date").alias(
-            "checkout_month"
+        genre_analytics = (
+            df.groupBy("genre")
+            .agg(
+                count("transaction_id").alias(
+                    "transaction_count"
+                ),
+                avg("fine_amount").alias(
+                    "average_fine"
+                )
+            )
         )
-    )
-    .agg(
-        count("transaction_id").alias(
-            "transaction_count"
+
+        genre_analytics.orderBy(
+            "transaction_count",
+            ascending=False
+        ).show(
+            truncate=False
         )
-    )
-    .orderBy(
-        "checkout_year",
-        "checkout_month"
-    )
-)
 
-monthly_trends.show(
-    truncate=False
-)
+        # --------------------------------------------------
+        # READER ANALYTICS
+        # --------------------------------------------------
 
+        print("\n--- Reader Analytics ---")
 
-# --------------------------------------------------
-# 13. TRANSACTION STATUS ANALYTICS
-# --------------------------------------------------
-
-print("\n--- Transaction Status Analytics ---")
-
-status_analytics = (
-    df.groupBy(
-        "transaction_status"
-    )
-    .agg(
-        count("transaction_id").alias(
-            "transaction_count"
-        ),
-        avg("fine_amount").alias(
-            "average_fine"
+        reader_analytics = (
+            df.groupBy("reader_type")
+            .agg(
+                count("transaction_id").alias(
+                    "transaction_count"
+                ),
+                avg("renewal_count").alias(
+                    "average_renewals"
+                )
+            )
         )
-    )
-)
 
-status_analytics.show(
-    truncate=False
-)
+        reader_analytics.orderBy(
+            "transaction_count",
+            ascending=False
+        ).show(
+            truncate=False
+        )
+
+        # --------------------------------------------------
+        # BRANCH ANALYTICS
+        # --------------------------------------------------
+
+        print("\n--- Branch Analytics ---")
+
+        branch_analytics = (
+            df.groupBy(
+                "branch_id",
+                "branch_name",
+                "city"
+            )
+            .agg(
+                count("transaction_id").alias(
+                    "transaction_count"
+                ),
+                sum("fine_amount").alias(
+                    "total_fine"
+                )
+            )
+        )
+
+        branch_analytics.orderBy(
+            "transaction_count",
+            ascending=False
+        ).show(
+            10,
+            truncate=False
+        )
+
+        # --------------------------------------------------
+        # COLLECTION ANALYTICS
+        # --------------------------------------------------
+
+        print("\n--- Collection Analytics ---")
+
+        collection_analytics = (
+            df.groupBy(
+                "collection_status"
+            )
+            .agg(
+                count("book_id").alias(
+                    "book_transaction_count"
+                ),
+                avg("available_copies").alias(
+                    "average_available_copies"
+                )
+            )
+        )
+
+        collection_analytics.show(
+            truncate=False
+        )
+
+        # --------------------------------------------------
+        # YEARLY TRENDS
+        # --------------------------------------------------
+
+        print("\n--- Yearly Reading Trends ---")
+
+        yearly_trends = (
+            df.groupBy(
+                year("checkout_date").alias(
+                    "checkout_year"
+                )
+            )
+            .agg(
+                count("transaction_id").alias(
+                    "transaction_count"
+                )
+            )
+            .orderBy(
+                "checkout_year"
+            )
+        )
+
+        yearly_trends.show()
+
+        # --------------------------------------------------
+        # MONTHLY TRENDS
+        # --------------------------------------------------
+
+        print("\n--- Monthly Reading Trends ---")
+
+        monthly_trends = (
+            df.groupBy(
+                year("checkout_date").alias(
+                    "checkout_year"
+                ),
+                month("checkout_date").alias(
+                    "checkout_month"
+                )
+            )
+            .agg(
+                count("transaction_id").alias(
+                    "transaction_count"
+                )
+            )
+            .orderBy(
+                "checkout_year",
+                "checkout_month"
+            )
+        )
+
+        monthly_trends.show(
+            truncate=False
+        )
+
+        # --------------------------------------------------
+        # TRANSACTION STATUS ANALYTICS
+        # --------------------------------------------------
+
+        print(
+            "\n--- Transaction Status Analytics ---"
+        )
+
+        status_analytics = (
+            df.groupBy(
+                "transaction_status"
+            )
+            .agg(
+                count("transaction_id").alias(
+                    "transaction_count"
+                ),
+                avg("fine_amount").alias(
+                    "average_fine"
+                )
+            )
+        )
+
+        status_analytics.show(
+            truncate=False
+        )
+
+        # --------------------------------------------------
+        # Save analytical datasets
+        # --------------------------------------------------
+
+        OUTPUT_DIR.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+        write_dataframe_to_parquet(
+            book_analytics,
+            OUTPUT_DIR / "book_analytics"
+        )
+
+        write_dataframe_to_parquet(
+            genre_analytics,
+            OUTPUT_DIR / "genre_analytics"
+        )
+
+        write_dataframe_to_parquet(
+            reader_analytics,
+            OUTPUT_DIR / "reader_analytics"
+        )
+
+        write_dataframe_to_parquet(
+            branch_analytics,
+            OUTPUT_DIR / "branch_analytics"
+        )
+
+        write_dataframe_to_parquet(
+            collection_analytics,
+            OUTPUT_DIR / "collection_analytics"
+        )
+
+        write_dataframe_to_parquet(
+            yearly_trends,
+            OUTPUT_DIR / "yearly_trends"
+        )
+
+        write_dataframe_to_parquet(
+            monthly_trends,
+            OUTPUT_DIR / "monthly_trends"
+        )
+
+        write_dataframe_to_parquet(
+            status_analytics,
+            OUTPUT_DIR / "status_analytics"
+        )
+
+        print(
+            "\nAnalytical datasets saved successfully."
+        )
+
+        print(
+            f"\nOutput directory:\n{OUTPUT_DIR}"
+        )
+
+        print("\n" + "=" * 60)
+        print("PYSPARK PROCESSING COMPLETED SUCCESSFULLY")
+        print("=" * 60)
+
+        return True
+
+    finally:
+
+        # --------------------------------------------------
+        # Stop Spark
+        # --------------------------------------------------
+
+        spark.stop()
+
+        print("\nSpark session stopped.")
 
 
 # --------------------------------------------------
-# 14. Save analytical datasets
+# 4. Run directly
 # --------------------------------------------------
 
-OUTPUT_DIR.mkdir(
-    parents=True,
-    exist_ok=True
-)
-
-write_dataframe_to_parquet(book_analytics, OUTPUT_DIR / "book_analytics")
-write_dataframe_to_parquet(genre_analytics, OUTPUT_DIR / "genre_analytics")
-write_dataframe_to_parquet(reader_analytics, OUTPUT_DIR / "reader_analytics")
-write_dataframe_to_parquet(branch_analytics, OUTPUT_DIR / "branch_analytics")
-write_dataframe_to_parquet(collection_analytics, OUTPUT_DIR / "collection_analytics")
-write_dataframe_to_parquet(yearly_trends, OUTPUT_DIR / "yearly_trends")
-write_dataframe_to_parquet(monthly_trends, OUTPUT_DIR / "monthly_trends")
-write_dataframe_to_parquet(status_analytics, OUTPUT_DIR / "status_analytics")
-
-print("\nAnalytical datasets saved successfully.")
-
-
-# --------------------------------------------------
-# 15. Stop Spark
-# --------------------------------------------------
-
-spark.stop()
-
-print("\nSpark session stopped.")
-
-print("\n" + "=" * 60)
-print("PYSPARK PROCESSING COMPLETED")
-print("=" * 60)
+if __name__ == "__main__":
+    run_spark_processing()

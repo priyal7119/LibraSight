@@ -8,7 +8,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_DIR = PROJECT_ROOT / "spark" / "output"
 
 DB_CONFIG = {
-    "host": "localhost",
+    "host": "host.docker.internal",
     "port": 5432,
     "database": "librasight",
     "user": "postgres",

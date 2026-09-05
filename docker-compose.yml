@@ -1,0 +1,23 @@
+services:
+
+  airflow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: librasight-airflow
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      JAVA_HOME: "/usr/lib/jvm/java-17-openjdk-amd64"
+
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/logs:/opt/airflow/logs
+      - ./airflow/config:/opt/airflow/config
+      - ./:/opt/librasight
+
+    command: standalone

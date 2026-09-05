@@ -60,13 +60,16 @@ EXPECTED_COLUMNS = [
 ]
 
 
+# --------------------------------------------------
+# 3. Validation function
+# --------------------------------------------------
+
 def validate_data():
 
     print("=" * 60)
     print("LIBRASIGHT - DATA VALIDATION")
     print("=" * 60)
 
-    # Create quality directory if it doesn't exist
     QUALITY_DIR.mkdir(parents=True, exist_ok=True)
 
     # --------------------------------------------------
@@ -90,7 +93,6 @@ def validate_data():
 
     print("\n--- Structural Validation ---")
 
-    # Column count
     column_count_pass = len(df.columns) == len(EXPECTED_COLUMNS)
 
     quality_results.append({
@@ -100,7 +102,6 @@ def validate_data():
         "status": "PASS" if column_count_pass else "FAIL"
     })
 
-    # Missing columns
     missing_columns = [
         col for col in EXPECTED_COLUMNS
         if col not in df.columns
@@ -113,7 +114,6 @@ def validate_data():
         "status": "PASS" if len(missing_columns) == 0 else "FAIL"
     })
 
-    # Duplicate records
     duplicate_count = df.duplicated().sum()
 
     quality_results.append({
@@ -123,7 +123,6 @@ def validate_data():
         "status": "PASS" if duplicate_count == 0 else "CHECK"
     })
 
-    # Completely empty rows
     empty_rows = df.isna().all(axis=1).sum()
 
     quality_results.append({
@@ -215,22 +214,26 @@ def validate_data():
         })
 
     # --------------------------------------------------
-    # Convert required columns for range checks
+    # Convert columns for range checks
     # --------------------------------------------------
 
     age = pd.to_numeric(df["age"], errors="coerce")
+
     publication_year = pd.to_numeric(
         df["publication_year"],
         errors="coerce"
     )
+
     fine_amount = pd.to_numeric(
         df["fine_amount"],
         errors="coerce"
     )
+
     total_copies = pd.to_numeric(
         df["total_copies"],
         errors="coerce"
     )
+
     available_copies = pd.to_numeric(
         df["available_copies"],
         errors="coerce"
@@ -265,9 +268,7 @@ def validate_data():
     quality_results.append({
         "category": "Range",
         "check": "Valid publication year",
-        "invalid_count": int(
-            invalid_publication_year.sum()
-        ),
+        "invalid_count": int(invalid_publication_year.sum()),
         "status": (
             "PASS"
             if invalid_publication_year.sum() == 0
@@ -454,9 +455,15 @@ def validate_data():
     )
 
     print("\n" + "=" * 60)
-    print("VALIDATION COMPLETED")
+    print("VALIDATION COMPLETED SUCCESSFULLY")
     print("=" * 60)
 
+    return True
+
+
+# --------------------------------------------------
+# 4. Run validation directly
+# --------------------------------------------------
 
 if __name__ == "__main__":
     validate_data()

@@ -63,7 +63,6 @@ def load_raw_data():
     print("LIBRASIGHT - DATA INGESTION")
     print("=" * 60)
 
-    # Check whether the CSV file exists
     if not RAW_FILE.exists():
         raise FileNotFoundError(
             f"Raw CSV file not found at: {RAW_FILE}"
@@ -72,7 +71,6 @@ def load_raw_data():
     print(f"\nRaw file found:")
     print(RAW_FILE)
 
-    # Read CSV using Pandas
     df = pd.read_csv(RAW_FILE)
 
     print("\nCSV loaded successfully.")
@@ -151,9 +149,24 @@ def load_raw_data():
 
 
 # --------------------------------------------------
-# 4. Run ingestion
+# 4. Airflow-compatible wrapper
+# --------------------------------------------------
+
+def ingest_data():
+    """
+    Airflow task function.
+    Executes the existing ingestion process.
+    """
+    df = load_raw_data()
+
+    print("\nAirflow ingestion task completed successfully.")
+
+    return True
+
+
+# --------------------------------------------------
+# 5. Run ingestion directly
 # --------------------------------------------------
 
 if __name__ == "__main__":
-    df = load_raw_data()
-    
+    load_raw_data()

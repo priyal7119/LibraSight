@@ -21,7 +21,6 @@ def clean_data():
     print("LIBRASIGHT - CLEANING AND TRANSFORMATION")
     print("=" * 60)
 
-    # Create output directory
     PROCESSED_DIR.mkdir(
         parents=True,
         exist_ok=True
@@ -30,6 +29,11 @@ def clean_data():
     # --------------------------------------------------
     # Load raw data
     # --------------------------------------------------
+
+    if not RAW_FILE.exists():
+        raise FileNotFoundError(
+            f"Raw CSV file not found: {RAW_FILE}"
+        )
 
     df = pd.read_csv(RAW_FILE)
 
@@ -222,10 +226,6 @@ def clean_data():
     # 9. Handle missing values
     # --------------------------------------------------
 
-    # Text fields:
-    # keep unknown values explicit instead of
-    # leaving them as NaN.
-
     text_fill_columns = [
         "reader_name",
         "gender",
@@ -239,15 +239,6 @@ def clean_data():
             df[column] = df[column].fillna(
                 "Unknown"
             )
-
-    # Numeric age:
-    # retain missingness rather than inventing
-    # an age value.
-
-    # Return date:
-    # missing return dates are allowed because
-    # active/overdue transactions may not yet
-    # have been returned.
 
     # --------------------------------------------------
     # 10. Standardize missing categorical values
@@ -289,11 +280,31 @@ def clean_data():
     )
 
     print("\n" + "=" * 60)
-    print("CLEANING AND TRANSFORMATION COMPLETED")
+    print("CLEANING AND TRANSFORMATION COMPLETED SUCCESSFULLY")
     print("=" * 60)
 
     return df
 
+
+# --------------------------------------------------
+# 12. Airflow-compatible wrapper
+# --------------------------------------------------
+
+def clean_transform():
+    """
+    Airflow task function.
+    Executes the existing cleaning and transformation process.
+    """
+    clean_data()
+
+    print("\nAirflow cleaning/transformation task completed successfully.")
+
+    return True
+
+
+# --------------------------------------------------
+# 13. Run directly
+# --------------------------------------------------
 
 if __name__ == "__main__":
     clean_data()
