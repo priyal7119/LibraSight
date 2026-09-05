@@ -1,0 +1,13 @@
+pandas
+numpy
+pyarrow
+pyspark
+psycopg2-binary
+SQLAlchemy
+fastapi
+uvicorn
+pydantic
+python-dotenv
+reportlab
+matplotlib
+pytest

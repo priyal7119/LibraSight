@@ -1,0 +1,60 @@
+category,check,invalid_count,status
+Structural,Expected column count,0,PASS
+Structural,Missing expected columns,0,PASS
+Structural,Duplicate records,3,CHECK
+Structural,Completely empty records,0,PASS
+Data Type,Numeric values in age,0,PASS
+Data Type,Numeric values in publication_year,0,PASS
+Data Type,Numeric values in branch_capacity,0,PASS
+Data Type,Numeric values in renewal_count,0,PASS
+Data Type,Numeric values in reservation_count,0,PASS
+Data Type,Numeric values in fine_amount,0,PASS
+Data Type,Numeric values in total_copies,0,PASS
+Data Type,Numeric values in available_copies,0,PASS
+Data Type,Date values in membership_date,26,FAIL
+Data Type,Date values in checkout_date,33,FAIL
+Data Type,Date values in due_date,33,FAIL
+Data Type,Date values in return_date,20,FAIL
+Missing Values,Missing values in transaction_id,0,PASS
+Missing Values,Missing values in reader_id,0,PASS
+Missing Values,Missing values in reader_name,5,CHECK
+Missing Values,Missing values in age,7,CHECK
+Missing Values,Missing values in gender,4,CHECK
+Missing Values,Missing values in reader_type,0,PASS
+Missing Values,Missing values in membership_date,0,PASS
+Missing Values,Missing values in home_branch_id,0,PASS
+Missing Values,Missing values in book_id,0,PASS
+Missing Values,Missing values in isbn,0,PASS
+Missing Values,Missing values in book_title,0,PASS
+Missing Values,Missing values in author,0,PASS
+Missing Values,Missing values in genre,0,PASS
+Missing Values,Missing values in publication_year,0,PASS
+Missing Values,Missing values in language,6,CHECK
+Missing Values,Missing values in format,0,PASS
+Missing Values,Missing values in publisher,11,CHECK
+Missing Values,Missing values in branch_id,0,PASS
+Missing Values,Missing values in branch_name,0,PASS
+Missing Values,Missing values in city,0,PASS
+Missing Values,Missing values in area,8,CHECK
+Missing Values,Missing values in library_type,0,PASS
+Missing Values,Missing values in branch_capacity,0,PASS
+Missing Values,Missing values in checkout_date,0,PASS
+Missing Values,Missing values in due_date,0,PASS
+Missing Values,Missing values in return_date,73,CHECK
+Missing Values,Missing values in transaction_status,0,PASS
+Missing Values,Missing values in renewal_count,0,PASS
+Missing Values,Missing values in reservation_flag,0,PASS
+Missing Values,Missing values in reservation_count,0,PASS
+Missing Values,Missing values in checkout_method,0,PASS
+Missing Values,Missing values in fine_amount,0,PASS
+Missing Values,Missing values in total_copies,0,PASS
+Missing Values,Missing values in available_copies,0,PASS
+Missing Values,Missing values in collection_status,0,PASS
+Range,Age between 0 and 120,3,FAIL
+Range,Valid publication year,2,FAIL
+Range,Fine amount is non-negative,3,FAIL
+Range,Total copies are non-negative,0,PASS
+Range,Available copies are non-negative,0,PASS
+Logical,Due date >= checkout date,0,PASS
+Logical,Return date >= checkout date,0,PASS
+Logical,Available copies <= total copies,4,FAIL
