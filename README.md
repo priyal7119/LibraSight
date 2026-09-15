@@ -41,6 +41,71 @@ This repository contains the following major components:
 - Docker + Docker Compose
 - ReportLab, PyPDF, Matplotlib
 
+## Features
+
+This section summarizes the main features and capabilities implemented in LibraSight. Each area lists concrete behaviors, outputs, and extension points so contributors and users can quickly understand what the system delivers.
+
+- Ingestion
+    - Flexible CSV/TSV readers with schema hints and header normalization.
+    - Pluggable reader interfaces in `ingestion/readers.py` to support new sources (JSON, API, database exports).
+    - Input validation hooks to reject or flag malformed rows during ingestion.
+    - Batch and single-file ingestion modes with configurable chunk sizes to limit memory use.
+
+- Validation & Data Quality
+    - Rule-driven validation engine in `validation/validate.py` covering structural, type, logical, and domain-specific checks.
+    - Detailed rejection records written to `data/quality/rejected_records.csv` with failure reasons and source pointers.
+    - Aggregate data-quality reports (`data/quality/data_quality_report.csv`) summarizing counts by rule, severity, and source file.
+    - Duplicate detection and canonicalization rules for borrower and item identifiers.
+
+- Transformation & Enrichment
+    - Cleaning and normalization implemented in `transformation/clean_transform.py` (dates, name normalization, code mapping).
+    - Field-level enrichment (age calculation, derived loan durations, circulation flags) and canonical field mapping.
+    - Parquet export of cleaned datasets for efficient downstream processing (`data/processed/`).
+
+- PySpark Analytics
+    - PySpark job collection under `spark/jobs/` that generates analytical aggregates (monthly trends, branch metrics, genre/collection analytics).
+    - Multi-stage aggregation pipeline with partitioned outputs in `spark/output/` for efficient downstream querying.
+    - Reusable metrics templates for new aggregation tasks (e.g., cohort analysis, retention curves).
+
+- Warehouse & Loading
+    - Star-schema loading scripts in `database/` with staging tables and idempotent loader logic.
+    - SQL queries and schema definitions to support dimensional reporting and fast rollups (`database/schema.sql`, `database/queries.sql`).
+
+- Backend API
+    - FastAPI application with analytics endpoints in `backend/app/` exposing time-series aggregates, KPI endpoints, and data-quality summaries.
+    - OpenAPI docs available at `/docs` and health / readiness endpoints for orchestration.
+    - Pagination, filtering, and date-range query support for large result sets.
+
+- Frontend Dashboard
+    - React + Vite frontend providing interactive charts, filter panels, and drilldowns for branch, collection, and reader analytics.
+    - Reusable chart components and services under `frontend/src/` for quick extension of new visualizations.
+
+- Orchestration & Scheduling
+    - Airflow DAG `airflow/dags/library_etl_dag.py` for end-to-end ETL orchestration with clear task boundaries: ingest → validate → transform → spark → load → report.
+    - Local Docker Compose setup for reproducible Airflow deployment and easy testing.
+
+- Reporting & Exports
+    - PDF generation utilities and report templates for scheduled or ad-hoc reporting (ReportLab, PyPDF integration).
+    - CSV and JSON export endpoints for downstream systems and BI tooling (e.g., Power BI templates under `powerbi/`).
+
+- Observability & Testing
+    - Pytest coverage for ingestion, validation, transformation, and Spark outputs (`tests/`).
+    - Log collection under `airflow/logs/` and simple metrics endpoints to support monitoring.
+
+- Security & Privacy
+    - PII handling guidance: configurable removal or hashing of personally-identifiable fields during transformation.
+    - Principle of least privilege recommended for database credentials and deployment secrets (use environment variables / secrets store).
+
+- Extensibility & Configuration
+    - Centralized configuration via environment variables and small config modules to enable different deployment profiles (dev, staging, prod).
+    - Clear extension points: add new readers, validation rules, Spark metrics, or frontend widgets with well-documented module boundaries.
+
+- Deployment & Scaling
+    - Dockerized components and Compose scripts to run locally; the architecture supports containerized scaling for Spark and Postgres in cloud deployments.
+
+- Example Use Cases
+    - Monthly circulation trend reports, branch performance dashboards, collection turnover analysis, reader retention cohorts, and data-quality monitoring for source systems.
+
 ## High-level architecture
 
 ```mermaid
