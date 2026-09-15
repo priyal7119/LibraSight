@@ -13,6 +13,7 @@ services:
     environment:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       JAVA_HOME: "/usr/lib/jvm/java-17-openjdk-amd64"
+      RAW_DATA_FILE: "/opt/librasight/data/raw/library_raw_data.csv"
 
     volumes:
       - ./airflow/dags:/opt/airflow/dags

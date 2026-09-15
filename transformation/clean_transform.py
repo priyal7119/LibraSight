@@ -1,6 +1,14 @@
 import os
+import sys
+from pathlib import Path
+
 import pandas as pd
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from ingestion.readers import get_raw_file, read_input_file
 
 # ============================================================
 # PATH CONFIGURATION
@@ -8,12 +16,7 @@ import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-RAW_FILE = os.path.join(
-    BASE_DIR,
-    "data",
-    "raw",
-    "library_raw_data.csv"
-)
+RAW_FILE = get_raw_file()
 
 REJECTED_FILE = os.path.join(
     BASE_DIR,
@@ -146,7 +149,7 @@ def main():
 
     print("\n[1] Loading raw data...")
 
-    df = pd.read_csv(RAW_FILE)
+    df = read_input_file(RAW_FILE)
 
     original_count = len(df)
 

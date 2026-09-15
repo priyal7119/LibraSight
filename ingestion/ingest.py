@@ -1,6 +1,6 @@
 from pathlib import Path
 import pandas as pd
-
+from readers import get_raw_file,read_input_file
 
 # --------------------------------------------------
 # 1. Define project paths
@@ -8,8 +8,7 @@ import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-RAW_FILE = PROJECT_ROOT / "data" / "raw" / "library_raw_data.csv"
-
+RAW_FILE = get_raw_file()
 
 # --------------------------------------------------
 # 2. Expected columns
@@ -71,7 +70,7 @@ def load_raw_data():
     print(f"\nRaw file found:")
     print(RAW_FILE)
 
-    df = pd.read_csv(RAW_FILE)
+    df = read_input_file(RAW_FILE)
 
     print("\nCSV loaded successfully.")
 

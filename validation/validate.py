@@ -1,5 +1,13 @@
+import sys
 from pathlib import Path
+
 import pandas as pd
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+from ingestion.readers import get_raw_file, read_input_file
 
 # --------------------------------------------------
 
@@ -9,7 +17,7 @@ import pandas as pd
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
-RAW_FILE = PROJECT_ROOT / "data" / "raw" / "library_raw_data.csv"
+RAW_FILE = get_raw_file()
 
 QUALITY_DIR = PROJECT_ROOT / "data" / "quality"
 
@@ -136,7 +144,7 @@ def validate_data():
             f"Raw CSV file not found: {RAW_FILE}"
         )
 
-    df = pd.read_csv(RAW_FILE)
+    df = read_input_file(RAW_FILE)
 
     print(f"\nLoaded {len(df)} records.")
 

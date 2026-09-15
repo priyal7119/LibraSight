@@ -1,153 +1,210 @@
-## LibraSight
+# LibraSight
 
-LibraSight is an end-to-end Library Analytics and Data Engineering platform that ingests, validates, transforms, aggregates, and exposes library circulation and catalog data for analytics, reporting, and BI.
+LibraSight is a library analytics and data engineering project built to ingest raw circulation data, validate quality issues, clean and transform the records, generate analytical outputs, and expose business insights through a FastAPI backend and React dashboard.
 
-## Table of Contents
-- Problem Statement (PS)
-- Proposed Solution
-- The Project
-- Features
-- Tech Stack
-- Architecture
-- Installation & Setup
-- Usage
-- Development
-- Contributing
-- License
+## Project purpose
 
-## Problem Statement (PS)
+The platform is designed for library operations teams and analysts who need to understand:
 
-Large library networks collect transactions from multiple sources (legacy terminals, kiosks, web portals, manual entry). Data arrives with inconsistent schemas, missing or invalid values, and logical errors (dates out of order, negative fines, inventory mismatches). This causes inaccurate KPIs, slow analytical queries, and manual reporting overhead.
+- circulation trends
+- reader behavior and library usage
+- branch performance
+- collection health and availability
+- data-quality issues across source records
 
-## Proposed Solution
+The solution combines ETL, warehouse loading, reporting, and visualization into a single end-to-end project for local analytics and demonstration workflows.
 
-LibraSight provides a reproducible, containerized pipeline that:
-- Enforces ingestion contracts and schema validation.
-- Runs multi-stage data quality checks and quarantines invalid records.
-- Converts cleaned data to columnar Parquet for fast analytics.
-- Runs distributed aggregations with PySpark and loads results into a star-schema PostgreSQL warehouse.
-- Exposes analytics via a FastAPI backend and a React dashboard; generates PDF reports and Power BI-ready artifacts.
+## Current project scope
 
-## The Project
+This repository contains the following major components:
 
-This repository contains the full pipeline and application components:
-- `ingestion/` — ingestion scripts and schema checks.
-- `validation/` — data quality checks and quarantine logic.
-- `transformation/` — cleaning, deduplication, and Parquet export.
-- `spark/` — PySpark jobs and aggregation logic.
-- `database/` — DDL, loader scripts, and analytical SQL.
-- `backend/` — FastAPI application and routers.
-- `frontend/` — React SPA (Vite) for dashboards and reports.
-- `airflow/` — DAGs and container orchestration for scheduled runs.
+- `ingestion/` — raw data ingestion and schema/input handling
+- `validation/` — rule-based validation, rejected-record handling, and data-quality reporting
+- `transformation/` — cleaning, normalization, and parquet export logic
+- `spark/` — PySpark aggregation jobs and generated analytical outputs
+- `database/` — SQL schema and warehouse loading scripts
+- `backend/` — FastAPI application and endpoint layer
+- `frontend/` — Vite + React dashboard UI
+- `airflow/` — orchestration DAG for ETL workflow execution
+- `data/` — raw, processed, and quality output files
+- `tests/` — automated validation for API, data extraction, transformation, Spark jobs, and reports
 
-## Features
+## Technology stack
 
-- Ingestion contract enforcement and header validation.
-- 60+ data quality checks (structural, type, missing, range, logical).
-- Quarantine of rejected records and audit report generation.
-- Parquet export for columnar storage and efficient reads.
-- PySpark distributed analytics producing multiple aggregated outputs.
-- Star-schema PostgreSQL data warehouse optimized for analytical queries.
-- FastAPI asynchronous REST endpoints for KPIs and reporting.
-- Dynamic PDF report generation.
-- React dashboard with charts and tables; Power BI model artifacts.
+- Python 3.11+
+- Pandas, NumPy, PyArrow
+- PySpark 4.2.0
+- SQLAlchemy + PostgreSQL
+- FastAPI + Uvicorn
+- React 18 + Vite
+- Apache Airflow 3.3.1
+- Docker + Docker Compose
+- ReportLab, PyPDF, Matplotlib
 
-## Tech Stack
-
-- Python 3.11+ (Pandas, PySpark, PyArrow)
-- Apache Spark (PySpark)
-- Apache Airflow (DAG orchestration)
-- PostgreSQL 16 (data warehouse)
-- FastAPI + Uvicorn (backend)
-- React 18 + Vite (frontend)
-- Docker & docker-compose (containerization): used to run the full stack consistently across local development and deployment environments, including PostgreSQL, Airflow, the API, and the frontend. It helps avoid "works on my machine" issues by standardizing versions, networking, and startup order.
-- ReportLab (PDF generation)
-- Power BI (business reporting)
-
-Note: Docker is recommended for the full project setup, but it can be skipped if you are only running a subset of services manually in a local Python environment. For example, you can run the ingestion, transformation, and Spark jobs directly with Python and start the FastAPI app separately, but you lose the convenience and consistency of the containerized environment.
-
-## Architecture (high-level)
-
-1. Raw CSV ingestion -> schema verification -> validation/quarantine
-2. Cleaned records -> Parquet (data/processed)
-3. PySpark aggregations -> `spark/output/*`
-4. Loader -> PostgreSQL star schema
-5. FastAPI serves analytics to React frontend and report generator
-
-Mermaid diagram (viewers that support Mermaid will render this):
+## High-level architecture
 
 ```mermaid
-flowchart TD
-  RAW[data/raw/library_raw_data.csv]
-  INGEST[Ingestion & Validation]
-  PARQ[data/processed/library_clean.parquet]
-  SPARK[PySpark Aggregations]
-  PG[PostgreSQL Star Schema]
-  API[FastAPI Backend]
-  UI[React Frontend / Power BI]
-
-  RAW --> INGEST --> PARQ --> SPARK --> PG --> API --> UI
-  INGEST --> |rejected records| QUARANTINE[data/quality/rejected_records.csv]
+flowchart LR
+    RAW[Raw library CSV] --> INGEST[Ingestion]
+    INGEST --> VALIDATE[Validation]
+    VALIDATE --> CLEAN[Transformation]
+    CLEAN --> PARQUET[Processed parquet data]
+    PARQUET --> SPARK[PySpark analytics]
+    SPARK --> DB[PostgreSQL star schema]
+    DB --> API[FastAPI API]
+    API --> UI[React dashboard]
 ```
 
-## Installation & Setup
+## Workflow summary
 
-Prerequisites: `python 3.11+`, `docker`, `docker-compose` (recommended for the full containerized stack)
+1. Raw library records are ingested from source files.
+2. Validation checks identify structural, numeric, date, missing-value, range, and logical integrity issues.
+3. Cleaned data is transformed and exported for downstream analysis.
+4. PySpark jobs aggregate the processed data into analytical outputs.
+5. Results are loaded into a PostgreSQL warehouse structure.
+6. The backend exposes analytics endpoints for dashboard and report use.
+7. The frontend visualizes trends and operational metrics.
 
-Quick start (local, development):
+## Data-quality model
 
-> Docker is not strictly required for every workflow. If you prefer not to use it, you can run each component manually in a Python environment as long as the required dependencies and service endpoints are configured. Docker simply makes the setup easier and more reproducible.
+The project includes automated validation coverage for:
 
-1. Create and activate a virtual environment:
+- structural checks
+- duplicate detection
+- missing values
+- data type integrity
+- date validation
+- range constraints
+- logical consistency checks
+
+Examples from the current validation rules include:
+
+- duplicate records
+- age outside 0–120
+- invalid publication year
+- negative fine amount
+- negative available copies
+- available copies exceeding total copies
+- due or return dates earlier than checkout date
+
+These validation results are written to the data-quality outputs under `data/quality/` and surfaced by the API summary endpoints.
+
+## Operating environment
+
+### Prerequisites
+
+- Python 3.11 or newer
+- Node.js 18+
+- pip
+- Docker + Docker Compose for the Airflow workflow
+
+### Backend setup
+
+From the project root:
 
 ```bash
 python -m venv .venv
-source .venv/Scripts/activate  # Windows: .venv\Scripts\activate
+
+# Windows PowerShell
+.venv\Scripts\Activate.ps1
+```
+
+Then install the backend dependencies:
+
+```bash
 pip install -r requirements.txt
 ```
 
-2. Run services with Docker Compose (recommended for full stack):
+To start the API from the backend folder:
+
+```bash
+cd backend
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+Endpoints available include:
+
+- http://localhost:8000
+- http://localhost:8000/docs
+
+### Frontend setup
+
+```bash
+cd frontend
+npm install
+npm run dev -- --host 0.0.0.0 --port 4173
+```
+
+Frontend UI:
+
+- http://localhost:4173
+
+### Airflow orchestration
+
+The project includes a containerized Airflow DAG for the ETL pipeline:
 
 ```bash
 docker-compose up --build
 ```
 
-3. Run specific components locally:
+Airflow UI:
+
+- http://localhost:8080
+
+## Manual ETL execution
+
+The pipeline components can also be run directly from the project root:
 
 ```bash
-# Ingest and validate raw data
 python ingestion/ingest.py
-
-# Run transformation
+python validation/validate.py
 python transformation/clean_transform.py
-
-# Run PySpark job (local)
 python spark/jobs/library_spark_job.py
-
-# Start API server
-uvicorn backend.main:app --reload
+python database/load_data.py
 ```
 
-## Usage
+Generated outputs are stored in:
 
-- Access the UI at `http://localhost:3000` (Vite dev server) or the served frontend port configured in `docker-compose.yml`.
-- API endpoints are documented in the FastAPI interactive docs (e.g., `http://localhost:8000/docs`).
-- Generated Parquet and Spark outputs are stored under `data/processed/` and `spark/output/` respectively.
+- `data/raw/`
+- `data/processed/`
+- `data/quality/`
+- `spark/output/`
 
-## Development
+## Testing and verification
 
-- Run unit tests with `pytest`.
-- Linting and formatting: `black .` and `ruff .` (if configured).
-- To iterate on the frontend: `cd frontend && npm install && npm run dev`.
+The project includes pytest-based verification for:
+
+- ETL ingestion and readers
+- validation logic
+- transformation behavior
+- Spark output generation
+- PDF and report generation
+- API endpoints
+
+Run tests with:
+
+```bash
+pytest
+```
+
+## Current status
+
+The repository is a working local analytics prototype with a complete data pipeline, validation framework, API layer, and dashboard frontend. It is suitable for local demonstration, project reporting, and further enhancement.
+
+## Notes for reporting and future documentation
+
+This repository is well suited for use as a reference project in technical documentation, business reporting, and project summary materials. The primary technical themes are:
+
+- library data engineering
+- dataset quality governance
+- analytical warehouse modeling
+- operational reporting
+- dashboard-based insight delivery
 
 ## Contributing
 
-Contributions are welcome. Please open issues for bugs or feature requests and submit PRs for proposed changes. Follow repository coding standards and include tests for new functionality.
+Contributions are welcome. Changes to the pipeline, validation rules, API behavior, or UI should be reflected in tests and relevant documentation.
 
 ## License
 
-This project is provided under the MIT License. See `LICENSE` for details.
-
-## Contact
-
-For questions or support, open an issue or contact the maintainers.
+No root license file is currently present in the repository. This section should be updated when a formal project license is added.

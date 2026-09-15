@@ -13,3 +13,4 @@ matplotlib
 pytest
 pypdf
 httpx2
+openpyxl
