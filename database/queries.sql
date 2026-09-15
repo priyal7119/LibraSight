@@ -262,3 +262,336 @@ SELECT
     (SELECT COUNT(DISTINCT reader_key) FROM fact_library_transaction) AS unique_readers,
     (SELECT COUNT(DISTINCT book_key) FROM fact_library_transaction) AS unique_books,
     (SELECT COUNT(*) FROM dim_branch) AS number_of_branches;
+
+-- =====================================================
+-- PHASE 3: STAR SCHEMA VALIDATION
+-- =====================================================
+
+
+-- =====================================================
+-- 8. DIMENSION COUNTS
+-- =====================================================
+
+-- Number of records in dim_date
+SELECT
+    COUNT(*) AS dim_date_count
+FROM dim_date;
+
+
+-- Number of readers
+SELECT
+    COUNT(*) AS dim_reader_count
+FROM dim_reader;
+
+
+-- Number of books
+SELECT
+    COUNT(*) AS dim_book_count
+FROM dim_book;
+
+
+-- Number of branches
+SELECT
+    COUNT(*) AS dim_branch_count
+FROM dim_branch;
+
+
+-- =====================================================
+-- 9. FACT TABLE COUNT
+-- =====================================================
+
+SELECT
+    COUNT(*) AS fact_transaction_count
+FROM fact_library_transaction;
+
+
+-- =====================================================
+-- 10. COMPLETE WAREHOUSE COUNTS
+-- =====================================================
+
+SELECT
+    (SELECT COUNT(*)
+     FROM dim_date) AS dim_date_count,
+
+    (SELECT COUNT(*)
+     FROM dim_reader) AS dim_reader_count,
+
+    (SELECT COUNT(*)
+     FROM dim_book) AS dim_book_count,
+
+    (SELECT COUNT(*)
+     FROM dim_branch) AS dim_branch_count,
+
+    (SELECT COUNT(*)
+     FROM fact_library_transaction) AS fact_transaction_count;
+
+
+-- =====================================================
+-- 11. FACT FOREIGN-KEY POPULATION CHECK
+-- =====================================================
+
+SELECT
+    COUNT(*) AS total_fact_records,
+
+    COUNT(reader_key) AS records_with_reader_key,
+
+    COUNT(book_key) AS records_with_book_key,
+
+    COUNT(branch_key) AS records_with_branch_key,
+
+    COUNT(date_key) AS records_with_date_key
+
+FROM fact_library_transaction;
+
+
+-- =====================================================
+-- 12. ORPHAN READER CHECK
+-- =====================================================
+
+SELECT
+    COUNT(*) AS orphaned_reader_records
+
+FROM fact_library_transaction f
+
+LEFT JOIN dim_reader r
+    ON f.reader_key = r.reader_key
+
+WHERE r.reader_key IS NULL;
+
+
+-- =====================================================
+-- 13. ORPHAN BOOK CHECK
+-- =====================================================
+
+SELECT
+    COUNT(*) AS orphaned_book_records
+
+FROM fact_library_transaction f
+
+LEFT JOIN dim_book b
+    ON f.book_key = b.book_key
+
+WHERE b.book_key IS NULL;
+
+
+-- =====================================================
+-- 14. ORPHAN BRANCH CHECK
+-- =====================================================
+
+SELECT
+    COUNT(*) AS orphaned_branch_records
+
+FROM fact_library_transaction f
+
+LEFT JOIN dim_branch br
+    ON f.branch_key = br.branch_key
+
+WHERE br.branch_key IS NULL;
+
+
+-- =====================================================
+-- 15. ORPHAN DATE CHECK
+-- =====================================================
+
+SELECT
+    COUNT(*) AS orphaned_date_records
+
+FROM fact_library_transaction f
+
+LEFT JOIN dim_date d
+    ON f.date_key = d.date_key
+
+WHERE d.date_key IS NULL;
+
+
+-- =====================================================
+-- 16. COMPLETE FOREIGN-KEY INTEGRITY CHECK
+-- =====================================================
+
+SELECT
+
+    COUNT(*) FILTER (
+        WHERE r.reader_key IS NULL
+    ) AS orphaned_readers,
+
+    COUNT(*) FILTER (
+        WHERE b.book_key IS NULL
+    ) AS orphaned_books,
+
+    COUNT(*) FILTER (
+        WHERE br.branch_key IS NULL
+    ) AS orphaned_branches,
+
+    COUNT(*) FILTER (
+        WHERE d.date_key IS NULL
+    ) AS orphaned_dates
+
+FROM fact_library_transaction f
+
+LEFT JOIN dim_reader r
+    ON f.reader_key = r.reader_key
+
+LEFT JOIN dim_book b
+    ON f.book_key = b.book_key
+
+LEFT JOIN dim_branch br
+    ON f.branch_key = br.branch_key
+
+LEFT JOIN dim_date d
+    ON f.date_key = d.date_key;
+
+
+-- =====================================================
+-- 17. DUPLICATE TRANSACTION CHECK
+-- =====================================================
+
+SELECT
+    transaction_id,
+    COUNT(*) AS record_count
+
+FROM fact_library_transaction
+
+GROUP BY transaction_id
+
+HAVING COUNT(*) > 1;
+
+
+-- =====================================================
+-- 18. TOTAL VS UNIQUE TRANSACTIONS
+-- =====================================================
+
+SELECT
+    COUNT(*) AS total_transactions,
+
+    COUNT(DISTINCT transaction_id)
+        AS unique_transactions
+
+FROM fact_library_transaction;
+
+
+-- =====================================================
+-- 19. STAR-SCHEMA JOIN VALIDATION
+-- =====================================================
+
+SELECT
+    COUNT(*) AS successfully_joined_transactions
+
+FROM fact_library_transaction f
+
+INNER JOIN dim_reader r
+    ON f.reader_key = r.reader_key
+
+INNER JOIN dim_book b
+    ON f.book_key = b.book_key
+
+INNER JOIN dim_branch br
+    ON f.branch_key = br.branch_key
+
+INNER JOIN dim_date d
+    ON f.date_key = d.date_key;
+
+
+-- =====================================================
+-- 20. BUSINESS KPI VERIFICATION
+-- =====================================================
+
+-- Total transactions
+SELECT
+    COUNT(*) AS total_transactions
+FROM fact_library_transaction;
+
+
+-- Total books
+SELECT
+    COUNT(*) AS total_books
+FROM dim_book;
+
+
+-- Total readers
+SELECT
+    COUNT(*) AS total_readers
+FROM dim_reader;
+
+
+-- Total branches
+SELECT
+    COUNT(*) AS total_branches
+FROM dim_branch;
+
+
+-- =====================================================
+-- 21. COMPLETE DASHBOARD KPI CHECK
+-- =====================================================
+
+SELECT
+    (SELECT COUNT(*)
+     FROM fact_library_transaction)
+        AS total_transactions,
+
+    (SELECT COUNT(*)
+     FROM dim_book)
+        AS total_books,
+
+    (SELECT COUNT(*)
+     FROM dim_reader)
+        AS total_readers,
+
+    (SELECT COUNT(*)
+     FROM dim_branch)
+        AS total_branches;
+
+
+-- =====================================================
+-- 22. KPI COMPARISON USING FACT TABLE
+-- =====================================================
+
+SELECT
+    COUNT(*) AS total_transactions,
+
+    COUNT(DISTINCT book_key) AS total_books_used,
+
+    COUNT(DISTINCT reader_key) AS total_readers_active,
+
+    COUNT(DISTINCT branch_key) AS total_branches_used
+
+FROM fact_library_transaction;
+
+
+-- =====================================================
+-- 23. FINAL STAR-SCHEMA SAMPLE
+-- =====================================================
+
+SELECT
+    f.transaction_id,
+
+    r.reader_id,
+    r.reader_name,
+
+    b.book_id,
+    b.book_title,
+
+    br.branch_id,
+    br.branch_name,
+
+    d.full_date AS checkout_date,
+
+    f.transaction_status,
+    f.fine_amount
+
+FROM fact_library_transaction f
+
+JOIN dim_reader r
+    ON f.reader_key = r.reader_key
+
+JOIN dim_book b
+    ON f.book_key = b.book_key
+
+JOIN dim_branch br
+    ON f.branch_key = br.branch_key
+
+JOIN dim_date d
+    ON f.date_key = d.date_key
+
+ORDER BY f.transaction_id
+
+LIMIT 10;

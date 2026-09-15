@@ -1,0 +1,62 @@
+{
+    "overall_status": "PASS",
+    "reports": {
+        "monthly_library_performance": {
+            "status": "PASS",
+            "checks": {
+                "PDF Generated Endpoint": "PASS",
+                "PDF Generated": "PASS",
+                "PDF Readable": "PASS",
+                "Total Transactions": "PASS",
+                "Active Readers": "PASS",
+                "Books Borrowed": "PASS",
+                "Active Branches": "PASS",
+                "Monthly Trend": "PASS",
+                "Transaction Status": "PASS"
+            },
+            "errors": {}
+        },
+        "reading_trends": {
+            "status": "PASS",
+            "checks": {
+                "PDF Generated": "PASS",
+                "Yearly Trends": "PASS",
+                "Monthly Trends": "PASS",
+                "Genre Popularity": "PASS",
+                "Format Usage": "PASS"
+            },
+            "errors": {}
+        },
+        "collection_analysis": {
+            "status": "PASS",
+            "checks": {
+                "PDF Generated": "PASS",
+                "Top 10 Books": "PASS",
+                "Availability": "PASS",
+                "Reservations": "PASS"
+            },
+            "errors": {}
+        },
+        "branch_performance": {
+            "status": "PASS",
+            "checks": {
+                "PDF Generated": "PASS",
+                "Branch Circulation": "PASS",
+                "Reader Reach": "PASS",
+                "Fine Collection": "PASS",
+                "Overdue Transactions": "PASS"
+            },
+            "errors": {}
+        },
+        "data_quality": {
+            "status": "PASS",
+            "checks": {
+                "PDF Generated": "PASS",
+                "Total Records": "PASS",
+                "Rejected Records": "PASS",
+                "Quality Score": "PASS"
+            },
+            "errors": {}
+        }
+    }
+}

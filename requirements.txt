@@ -11,3 +11,5 @@ python-dotenv
 reportlab
 matplotlib
 pytest
+pypdf
+httpx2

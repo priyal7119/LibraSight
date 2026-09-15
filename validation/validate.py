@@ -1,9 +1,10 @@
 from pathlib import Path
 import pandas as pd
 
-
 # --------------------------------------------------
+
 # 1. Project paths
+
 # --------------------------------------------------
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -16,56 +17,110 @@ QUALITY_REPORT = QUALITY_DIR / "data_quality_report.csv"
 
 REJECTED_RECORDS = QUALITY_DIR / "rejected_records.csv"
 
-
 # --------------------------------------------------
+
 # 2. Expected columns
+
 # --------------------------------------------------
 
 EXPECTED_COLUMNS = [
-    "transaction_id",
-    "reader_id",
-    "reader_name",
-    "age",
-    "gender",
-    "reader_type",
-    "membership_date",
-    "home_branch_id",
-    "book_id",
-    "isbn",
-    "book_title",
-    "author",
-    "genre",
-    "publication_year",
-    "language",
-    "format",
-    "publisher",
-    "branch_id",
-    "branch_name",
-    "city",
-    "area",
-    "library_type",
-    "branch_capacity",
-    "checkout_date",
-    "due_date",
-    "return_date",
-    "transaction_status",
-    "renewal_count",
-    "reservation_flag",
-    "reservation_count",
-    "checkout_method",
-    "fine_amount",
-    "total_copies",
-    "available_copies",
-    "collection_status"
+"transaction_id",
+"reader_id",
+"reader_name",
+"age",
+"gender",
+"reader_type",
+"membership_date",
+"home_branch_id",
+"book_id",
+"isbn",
+"book_title",
+"author",
+"genre",
+"publication_year",
+"language",
+"format",
+"publisher",
+"branch_id",
+"branch_name",
+"city",
+"area",
+"library_type",
+"branch_capacity",
+"checkout_date",
+"due_date",
+"return_date",
+"transaction_status",
+"renewal_count",
+"reservation_flag",
+"reservation_count",
+"checkout_method",
+"fine_amount",
+"total_copies",
+"available_copies",
+"collection_status"
 ]
+
+# --------------------------------------------------
+
+# 3. Date parsing function
+
+# --------------------------------------------------
+
+def parse_dates(series):
+    converted = pd.Series(pd.NaT, index=series.index, dtype="datetime64[ns]")
+
+    values = series.astype("string").str.strip()
+
+    # YYYY-MM-DD
+    mask = values.str.match(r"^\d{4}-\d{1,2}-\d{1,2}$", na=False)
+
+    converted.loc[mask] = pd.to_datetime(
+        values.loc[mask],
+        format="%Y-%m-%d",
+        errors="coerce"
+    )
+
+    # DD/MM/YYYY
+    mask = values.str.match(r"^\d{1,2}/\d{1,2}/\d{4}$", na=False)
+
+    converted.loc[mask] = pd.to_datetime(
+        values.loc[mask],
+        format="%d/%m/%Y",
+        errors="coerce"
+    )
+
+    # DD-MM-YYYY
+    mask = values.str.match(r"^\d{1,2}-\d{1,2}-\d{4}$", na=False)
+
+    converted.loc[mask] = pd.to_datetime(
+        values.loc[mask],
+        format="%d-%m-%Y",
+        errors="coerce"
+    )
+
+    # DD-MMM-YYYY
+    mask = values.str.match(
+        r"^\d{1,2}-[A-Za-z]{3}-\d{4}$",
+        na=False
+    )
+
+    converted.loc[mask] = pd.to_datetime(
+        values.loc[mask],
+        format="%d-%b-%Y",
+        errors="coerce"
+    )
+
+    return converted
 
 
 # --------------------------------------------------
-# 3. Validation function
+
+# 4. Validation function
+
 # --------------------------------------------------
 
 def validate_data():
-
     print("=" * 60)
     print("LIBRASIGHT - DATA VALIDATION")
     print("=" * 60)
@@ -180,10 +235,7 @@ def validate_data():
 
     for column in date_columns:
 
-        converted = pd.to_datetime(
-            df[column],
-            errors="coerce"
-        )
+        converted = parse_dates(df[column])
 
         invalid_count = (
             converted.isna() & df[column].notna()
@@ -330,19 +382,16 @@ def validate_data():
 
     print("\n--- Logical Validation ---")
 
-    checkout = pd.to_datetime(
-        df["checkout_date"],
-        errors="coerce"
+    checkout = parse_dates(
+        df["checkout_date"]
     )
 
-    due = pd.to_datetime(
-        df["due_date"],
-        errors="coerce"
+    due = parse_dates(
+        df["due_date"]
     )
 
-    returned = pd.to_datetime(
-        df["return_date"],
-        errors="coerce"
+    returned = parse_dates(
+        df["return_date"]
     )
 
     invalid_due_date = (
@@ -462,7 +511,9 @@ def validate_data():
 
 
 # --------------------------------------------------
+
 # 4. Run validation directly
+
 # --------------------------------------------------
 
 if __name__ == "__main__":

@@ -1,0 +1,45 @@
+{
+  "overall_status": "PASS",
+  "endpoints": {
+    "monthly_library_performance": {
+      "endpoint": "/reports/monthly-performance",
+      "status_code": 200,
+      "content_type": "application/pdf",
+      "content_length": 3724,
+      "pdf_pages": 2,
+      "ok": true
+    },
+    "reading_trends": {
+      "endpoint": "/reports/reading-trends",
+      "status_code": 200,
+      "content_type": "application/pdf",
+      "content_length": 4212,
+      "pdf_pages": 2,
+      "ok": true
+    },
+    "collection_analysis": {
+      "endpoint": "/reports/collection-analysis",
+      "status_code": 200,
+      "content_type": "application/pdf",
+      "content_length": 4440,
+      "pdf_pages": 2,
+      "ok": true
+    },
+    "branch_performance": {
+      "endpoint": "/reports/branch-performance",
+      "status_code": 200,
+      "content_type": "application/pdf",
+      "content_length": 3057,
+      "pdf_pages": 1,
+      "ok": true
+    },
+    "data_quality": {
+      "endpoint": "/reports/data-quality",
+      "status_code": 200,
+      "content_type": "application/pdf",
+      "content_length": 2244,
+      "pdf_pages": 1,
+      "ok": true
+    }
+  }
+}

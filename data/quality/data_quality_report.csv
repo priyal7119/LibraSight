@@ -11,10 +11,10 @@ Data Type,Numeric values in reservation_count,0,PASS
 Data Type,Numeric values in fine_amount,0,PASS
 Data Type,Numeric values in total_copies,0,PASS
 Data Type,Numeric values in available_copies,0,PASS
-Data Type,Date values in membership_date,26,FAIL
-Data Type,Date values in checkout_date,33,FAIL
-Data Type,Date values in due_date,33,FAIL
-Data Type,Date values in return_date,20,FAIL
+Data Type,Date values in membership_date,0,PASS
+Data Type,Date values in checkout_date,0,PASS
+Data Type,Date values in due_date,0,PASS
+Data Type,Date values in return_date,0,PASS
 Missing Values,Missing values in transaction_id,0,PASS
 Missing Values,Missing values in reader_id,0,PASS
 Missing Values,Missing values in reader_name,5,CHECK
