@@ -40,6 +40,13 @@ import {
     Pie,
     Cell,
     Legend,
+    AreaChart,
+    Area,
+    RadarChart,
+    Radar,
+    PolarGrid,
+    PolarAngleAxis,
+    PolarRadiusAxis,
 } from "recharts";
 
 const CHECKOUT_COLORS = {
@@ -257,14 +264,10 @@ function Dashboard() {
                                     ) : (
                                         <div style={{ width: "100%", height: 300 }}>
                                             <ResponsiveContainer width="100%" height="100%">
-                                                <BarChart
-                                                    data={branchChartData}
-                                                    layout="vertical"
-                                                    margin={{ top: 10, right: 20, left: 10, bottom: 0 }}
-                                                >
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" horizontal={false} />
-                                                    <XAxis type="number" stroke="var(--chart-axis)" fontSize={11} tickLine={false} axisLine={false} allowDecimals={false} />
-                                                    <YAxis dataKey="name" type="category" stroke="var(--chart-axis)" fontSize={11} tickLine={false} axisLine={false} width={100} />
+                                                <RadarChart data={branchChartData} outerRadius="72%" margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+                                                    <PolarGrid stroke="var(--chart-grid)" />
+                                                    <PolarAngleAxis dataKey="name" tick={{ fontSize: 11, fill: "var(--chart-axis)" }} />
+                                                    <PolarRadiusAxis tick={{ fontSize: 10, fill: "var(--chart-axis)" }} axisLine={false} tickLine={false} />
                                                     <Tooltip
                                                         contentStyle={{
                                                             backgroundColor: "var(--chart-tooltip-bg)",
@@ -276,8 +279,8 @@ function Dashboard() {
                                                         }}
                                                         formatter={(v) => [`${v} Checkouts`, "Transactions"]}
                                                     />
-                                                    <Bar dataKey="count" fill="var(--primary)" radius={[0, 6, 6, 0]} maxBarSize={28} />
-                                                </BarChart>
+                                                    <Radar name="Branch Performance" dataKey="count" stroke="#7c3aed" fill="#7c3aed" fillOpacity={0.45} />
+                                                </RadarChart>
                                             </ResponsiveContainer>
                                         </div>
                                     )}

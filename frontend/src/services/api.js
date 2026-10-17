@@ -12,8 +12,10 @@ const cleanParams = (params = {}) => {
     const cleaned = {};
     Object.keys(params).forEach((key) => {
         const val = params[key];
-        if (val !== null && val !== undefined && val !== "") {
-            cleaned[key] = val;
+        const normalizedValue = typeof val === "string" ? val.trim() : val;
+
+        if (normalizedValue !== null && normalizedValue !== undefined && normalizedValue !== "") {
+            cleaned[key] = normalizedValue;
         }
     });
     return cleaned;

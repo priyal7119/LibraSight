@@ -9,6 +9,7 @@ function DataTable({
     pageSize = 10,
     showSearch = true,
     showPagination = true,
+    className = "",
 }) {
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
@@ -44,7 +45,7 @@ function DataTable({
     }
 
     return (
-        <div className="table-container">
+        <div className={`table-container ${className}`.trim()}>
             {showSearch && (
                 <div className="table-toolbar">
                     <div className="table-search">
@@ -73,7 +74,7 @@ function DataTable({
             )}
 
             <div className="table-wrapper">
-                <table>
+                <table style={{ width: "100%", tableLayout: "auto" }}>
                     <thead>
                         <tr>
                             {columns.map((column) => (

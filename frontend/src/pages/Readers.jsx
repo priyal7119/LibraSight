@@ -186,6 +186,7 @@ function Readers() {
                         data={activity.slice(0, 8)}
                         showSearch={false}
                         showPagination={false}
+                        className="activity-table"
                     />
                 </ChartCard>
             </div>

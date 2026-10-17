@@ -32,9 +32,19 @@ function FilterPanel({ filters, onApplyFilters, onResetFilters }) {
                     const branchesData = branchesRes && branchesRes.data;
                     const genresData = genresRes && genresRes.data;
 
+                    const normalizedBranches = Array.isArray(branchesData)
+                        ? branchesData
+                        : Array.isArray(branchesData?.items)
+                            ? branchesData.items
+                            : branchesData?.branches || [];
+
+                    const normalizedGenres = Array.isArray(genresData)
+                        ? genresData
+                        : genresData?.genres || [];
+
                     setYears(Array.isArray(yearsData) ? yearsData : yearsData?.years || []);
-                    setBranches(Array.isArray(branchesData) ? branchesData : branchesData?.branches || []);
-                    setGenres(Array.isArray(genresData) ? genresData : genresData?.genres || []);
+                    setBranches(normalizedBranches);
+                    setGenres(normalizedGenres);
                 }
             })
             .catch((err) => {
@@ -58,19 +68,25 @@ function FilterPanel({ filters, onApplyFilters, onResetFilters }) {
     const handleApply = (e) => {
         if (e) e.preventDefault();
 
+        const normalizedYear = selectedYear ? Number(selectedYear) : "";
+        const normalizedBranch = selectedBranch ? selectedBranch.trim() : "";
+        const normalizedGenre = selectedGenre ? selectedGenre.trim() : "";
+        const normalizedStart = startDate ? new Date(`${startDate}T00:00:00`) : null;
+        const normalizedEnd = endDate ? new Date(`${endDate}T00:00:00`) : null;
+
         // Validate date range
-        if (startDate && endDate && startDate > endDate) {
+        if (normalizedStart && normalizedEnd && normalizedStart > normalizedEnd) {
             setDateError("Start date must be before end date.");
             return;
         }
         setDateError("");
 
         onApplyFilters({
-            year: selectedYear,
-            branch_id: selectedBranch,
-            genre: selectedGenre,
-            start_date: startDate,
-            end_date: endDate,
+            year: normalizedYear,
+            branch_id: normalizedBranch,
+            genre: normalizedGenre,
+            start_date: startDate || "",
+            end_date: endDate || "",
         });
     };
 
@@ -205,7 +221,7 @@ function FilterPanel({ filters, onApplyFilters, onResetFilters }) {
                                 <option value="">All Branches</option>
                                 {branches.map((b) => (
                                     <option key={b.branch_id} value={b.branch_id}>
-                                        {b.branch_name}
+                                        {b.branch_name || "Unnamed Branch"} ({b.branch_id || "N/A"})
                                     </option>
                                 ))}
                             </select>

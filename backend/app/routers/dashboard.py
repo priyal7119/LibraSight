@@ -22,6 +22,9 @@ def _build_filter_clauses(
     d: dim_date
     br: dim_branch
     b: dim_book
+
+    Use the canonical dim_date.full_date instead of raw fact checkout_date so
+    the dashboard filters follow the same date dimension used for the warehouse.
     """
     conditions = []
     params = {}
@@ -39,12 +42,12 @@ def _build_filter_clauses(
         params["genre"] = str(genre).strip()
 
     if start_date:
-        conditions.append("f.checkout_date >= :start_date")
-        params["start_date"] = start_date
+        conditions.append("d.full_date >= :start_date")
+        params["start_date"] = date.fromisoformat(str(start_date))
 
     if end_date:
-        conditions.append("f.checkout_date <= :end_date")
-        params["end_date"] = end_date
+        conditions.append("d.full_date <= :end_date")
+        params["end_date"] = date.fromisoformat(str(end_date))
 
     where_sql = ("WHERE " + " AND ".join(conditions)) if conditions else ""
     return where_sql, params

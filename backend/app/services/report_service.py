@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 try:
@@ -65,7 +65,7 @@ def _add_section(story, styles, title, data_rows, headers, note=None):
     story.append(
         Paragraph(
             title,
-            styles["Heading2"]
+            styles["SectionTitle"]
         )
     )
 
@@ -73,17 +73,20 @@ def _add_section(story, styles, title, data_rows, headers, note=None):
         story.append(
             Paragraph(
                 note,
-                styles["BodyText"]
+                styles["LibraBodyText"]
             )
         )
 
-    story.append(Spacer(1, 10))
+    story.append(Spacer(1, 8))
+
+    table_rows = _safe_table(data_rows, headers)
+    table_widths = [220, 130] if len(headers) == 2 else [170, 105, 105] if len(headers) == 3 else [190] + [90] * (len(headers) - 1)
+    if len(headers) == 1:
+        table_widths = [360]
 
     table = Table(
-        _safe_table(
-            data_rows,
-            headers
-        )
+        table_rows,
+        colWidths=table_widths,
     )
 
     table.setStyle(
@@ -108,11 +111,17 @@ def _add_section(story, styles, title, data_rows, headers, note=None):
                     "Helvetica-Bold",
                 ),
                 (
+                    "FONTSIZE",
+                    (0, 0),
+                    (-1, -1),
+                    8,
+                ),
+                (
                     "GRID",
                     (0, 0),
                     (-1, -1),
-                    1,
-                    colors.grey,
+                    0.75,
+                    colors.HexColor("#d1d5db"),
                 ),
                 (
                     "ALIGN",
@@ -121,30 +130,50 @@ def _add_section(story, styles, title, data_rows, headers, note=None):
                     "RIGHT",
                 ),
                 (
+                    "VALIGN",
+                    (0, 0),
+                    (-1, -1),
+                    "MIDDLE",
+                ),
+                (
                     "ROWBACKGROUNDS",
                     (0, 1),
                     (-1, -1),
                     [
-                        colors.whitesmoke,
-                        colors.Color(
-                            0.96,
-                            0.96,
-                            0.97
-                        ),
+                        colors.Color(0.99, 0.99, 0.995),
+                        colors.Color(0.97, 0.97, 0.98),
                     ],
                 ),
                 (
-                    "PADDING",
+                    "LEFTPADDING",
                     (0, 0),
                     (-1, -1),
-                    6,
+                    8,
+                ),
+                (
+                    "RIGHTPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    8,
+                ),
+                (
+                    "TOPPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    7,
+                ),
+                (
+                    "BOTTOMPADDING",
+                    (0, 0),
+                    (-1, -1),
+                    7,
                 ),
             ]
         )
     )
 
     story.append(table)
-    story.append(Spacer(1, 18))
+    story.append(Spacer(1, 16))
 
 
 def _render_summary_report(
@@ -162,10 +191,11 @@ def _render_summary_report(
             ParagraphStyle(
                 name="LibraTitle",
                 parent=styles["Title"],
-                fontSize=20,
-                leading=24,
+                fontName="Helvetica-Bold",
+                fontSize=22,
+                leading=26,
                 textColor=colors.HexColor("#111827"),
-                spaceAfter=8,
+                spaceAfter=4,
             )
         )
 
@@ -174,7 +204,8 @@ def _render_summary_report(
             ParagraphStyle(
                 name="LibraSubtitle",
                 parent=styles["Heading2"],
-                fontSize=13,
+                fontName="Helvetica-Bold",
+                fontSize=14,
                 textColor=colors.HexColor("#374151"),
                 spaceAfter=12,
             )
@@ -185,9 +216,24 @@ def _render_summary_report(
             ParagraphStyle(
                 name="LibraBodyText",
                 parent=styles["BodyText"],
+                fontName="Helvetica",
                 fontSize=9,
                 leading=12,
                 textColor=colors.HexColor("#374151"),
+            )
+        )
+
+    if "SectionTitle" not in styles.byName:
+        styles.add(
+            ParagraphStyle(
+                name="SectionTitle",
+                parent=styles["Heading2"],
+                fontName="Helvetica-Bold",
+                fontSize=13,
+                leading=16,
+                textColor=colors.HexColor("#1f2937"),
+                spaceBefore=4,
+                spaceAfter=6,
             )
         )
 
@@ -207,9 +253,10 @@ def _render_summary_report(
         )
     )
 
+    ist = timezone(timedelta(hours=5, minutes=30))
     story.append(
         Paragraph(
-            f"Generated: {datetime.utcnow().strftime('%Y-%m-%d %H:%M UTC')}",
+            f"Generated: {datetime.now(ist).strftime('%Y-%m-%d %H:%M IST')}",
             styles["LibraBodyText"],
         )
     )

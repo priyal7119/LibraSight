@@ -104,6 +104,12 @@ function Branches() {
 
     const totalTransactions = performance.reduce((s, b) => s + Number(b.transaction_count || 0), 0);
     const totalFines = performance.reduce((s, b) => s + parseFloat(b.total_fine || 0), 0);
+    const topBranch = performance.reduce((best, current) => {
+        const bestCount = Number(best?.transaction_count || 0);
+        const currentCount = Number(current?.transaction_count || 0);
+        return currentCount > bestCount ? current : best;
+    }, performance[0] || {});
+    const avgTransactions = performance.length ? Math.round(totalTransactions / performance.length) : 0;
 
     return (
         <div>
@@ -157,8 +163,25 @@ function Branches() {
 
             {/* Charts */}
             <div className="analytics-grid">
-                <ChartCard title="Branch Transaction Volume" subtitle="Circulations handled per branch location">
-                    <div style={{ width: "100%", height: 300 }}>
+                <ChartCard title="Branch Transaction Volume" subtitle="Circulations handled per branch location" className="branch-analytics-card">
+                    <div className="branch-chart-meta">
+                        <div className="branch-chart-stat">
+                            <span className="branch-chart-stat__label">Top branch</span>
+                            <strong>{topBranch.branch_name || topBranch.branch_id || "N/A"}</strong>
+                            <small>{Number(topBranch.transaction_count || 0)} transactions</small>
+                        </div>
+                        <div className="branch-chart-stat">
+                            <span className="branch-chart-stat__label">Avg. volume</span>
+                            <strong>{avgTransactions}</strong>
+                            <small>per branch</small>
+                        </div>
+                        <div className="branch-chart-stat">
+                            <span className="branch-chart-stat__label">Total fines</span>
+                            <strong>₹{totalFines.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                            <small>collected</small>
+                        </div>
+                    </div>
+                    <div style={{ width: "100%", height: 220 }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={chartData} margin={{ top: 10, right: 20, left: -10, bottom: 40 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
@@ -177,6 +200,7 @@ function Branches() {
                         data={performance}
                         showSearch={false}
                         showPagination={false}
+                        className="performance-table"
                     />
                 </ChartCard>
             </div>

@@ -88,11 +88,54 @@ function Books() {
         );
     }
 
+    const compactListText = (value) => {
+        if (!value) return "N/A";
+        const items = String(value)
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+
+        if (items.length <= 3) return items.join(", ");
+        return `${items.slice(0, 3).join(", ")}, ...`;
+    };
+
     const topBooksColumns = [
-        { key: "book_title", label: "Title" },
-        { key: "author", label: "Author" },
-        { key: "genre", label: "Genre", render: (g) => <StatusBadge status={g} /> },
-        { key: "transaction_count", label: "Circulations", render: (c) => (<span style={{ fontWeight: 700, color: "var(--primary)" }}>{c}</span>) }
+        {
+            key: "book_title",
+            label: "Title",
+            style: { width: "42%", minWidth: "220px" },
+            render: (value) => <span className="table-title-cell">{value || "N/A"}</span>,
+        },
+        {
+            key: "author",
+            label: "Author",
+            style: { width: "50%", minWidth: "220px" },
+            render: (value) => (
+                <span className="table-compact-text" title={value || ""}>
+                    {compactListText(value)}
+                </span>
+            ),
+        },
+        {
+            key: "genre",
+            label: "GEN",
+            style: { width: "8%", minWidth: "70px", textAlign: "right" },
+            render: (value) => {
+                const genres = String(value || "N/A")
+                    .split(",")
+                    .map((genre) => genre.trim())
+                    .filter(Boolean);
+
+                const primaryGenre = genres[0] || "N/A";
+                const badgeText = primaryGenre === "N/A" ? "N" : primaryGenre.charAt(0).toUpperCase();
+
+                return (
+                    <div className="genre-badges genre-badges--compact" title={primaryGenre}>
+                        <span className="genre-letter-badge">{badgeText}</span>
+                    </div>
+                );
+            },
+        },
     ];
 
     const bookColumns = [
@@ -112,19 +155,19 @@ function Books() {
     return (
         <div>
             <div className="page-header">
-                <div>
+                <div className="page-header__title-group">
                     <h1>Books</h1>
                     <p>Collection catalog, top titles, and genre analytics</p>
                 </div>
-                <StatusBadge status={`${totalBooks} Titles`} />
+                <StatusBadge className="page-header__count" status={`${totalBooks} Titles`} />
             </div>
 
             {/* Top Books + Genre Distribution */}
             <div className="analytics-grid">
-                <ChartCard title="Top 10 Most Borrowed Titles" subtitle="Ranked by total circulation count">
-                    <DataTable columns={topBooksColumns} data={topBooks} showSearch={false} showPagination={false} />
+                <ChartCard title="Top 10 Most Borrowed Titles" subtitle="Ranked by total circulation count" className="top-books-card">
+                    <DataTable columns={topBooksColumns} data={topBooks} showSearch={false} showPagination={false} className="top-books-table" />
                 </ChartCard>
-                <ChartCard title="Genre Distribution" subtitle="Transaction volume by book genre">
+                <ChartCard title="Genre Distribution" subtitle="Transaction volume by book genre" className="genre-chart-card">
                     <GenreDistributionChart data={genres} />
                 </ChartCard>
             </div>
@@ -143,11 +186,25 @@ function Books() {
                     showPagination={false}
                 />
                 {/* Server‑side pagination controls */}
-                <div className="table-pagination" style={{ marginTop: "12px", textAlign: "center" }}>
-                    <span>Page {page} of {totalPages}</span>
-                    <div style={{ display: "inline-block", marginLeft: "12px" }}>
-                        <button disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Previous</button>
-                        <button disabled={page === totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} style={{ marginLeft: "8px" }}>Next</button>
+                <div className="books-pagination">
+                    <span className="books-pagination__info">Page {page} of {totalPages}</span>
+                    <div className="books-pagination__buttons">
+                        <button
+                            className="btn-secondary"
+                            disabled={page === 1}
+                            onClick={() => setPage(p => Math.max(1, p - 1))}
+                            aria-label="Previous page"
+                        >
+                            Previous
+                        </button>
+                        <button
+                            className="btn-primary"
+                            disabled={page === totalPages}
+                            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                            aria-label="Next page"
+                        >
+                            Next
+                        </button>
                     </div>
                 </div>
             </div>

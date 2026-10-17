@@ -1,6 +1,6 @@
 import React from "react";
 
-function StatusBadge({ status, type }) {
+function StatusBadge({ status, type, className = "" }) {
     if (!status) return <span className="null-val">N/A</span>;
 
     const normalized = String(status).trim().toUpperCase();
@@ -40,7 +40,7 @@ function StatusBadge({ status, type }) {
     }
 
     return (
-        <span className={`status-badge status-badge--${variant}`}>
+        <span className={`status-badge status-badge--${variant} ${className}`.trim()}>
             <span className="status-badge__dot" />
             {status}
         </span>

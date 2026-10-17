@@ -97,10 +97,9 @@ def top_books(
 
     query = text("""
         SELECT
-            b.book_key,
             b.book_title,
-            b.author,
-            b.genre,
+            STRING_AGG(DISTINCT b.author, ', ') AS author,
+            STRING_AGG(DISTINCT b.genre, ', ') AS genre,
             COUNT(f.transaction_key) AS transaction_count
 
         FROM fact_library_transaction f
@@ -109,10 +108,7 @@ def top_books(
             ON f.book_key = b.book_key
 
         GROUP BY
-            b.book_key,
-            b.book_title,
-            b.author,
-            b.genre
+            b.book_title
 
         ORDER BY
             transaction_count DESC
