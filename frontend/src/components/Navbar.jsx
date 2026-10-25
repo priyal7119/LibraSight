@@ -143,10 +143,8 @@ function Navbar({ onToggleSidebar }) {
                 return "Reader Activity";
             case "/branches":
                 return "Branch Performance";
-            case "/reading-trends":
-                return "Reading Trends";
-            case "/collection":
-                return "Collection Health";
+            case "/data-pipeline":
+                return "Data Pipeline";
             case "/data-quality":
                 return "Data Quality & Audit";
             case "/reports":

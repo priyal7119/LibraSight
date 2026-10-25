@@ -5,8 +5,7 @@ import {
     BookOpen,
     Users,
     Building2,
-    TrendingUp,
-    LibraryBig,
+    GitBranch,
     ShieldCheck,
     FileText,
 } from "lucide-react";
@@ -37,14 +36,9 @@ function Sidebar({ isOpen, onClose }) {
             icon: <Building2 size={19} />,
         },
         {
-            to: "/reading-trends",
-            label: "Reading Trends",
-            icon: <TrendingUp size={19} />,
-        },
-        {
-            to: "/collection",
-            label: "Collection",
-            icon: <LibraryBig size={19} />,
+            to: "/data-pipeline",
+            label: "Data Pipeline",
+            icon: <GitBranch size={19} />,
         },
         {
             to: "/data-quality",

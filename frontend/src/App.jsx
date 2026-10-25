@@ -6,10 +6,9 @@ import Sidebar from "./components/Sidebar";
 
 import Dashboard from "./pages/Dashboard";
 import Books from "./pages/Books";
-import ReadingTrends from "./pages/ReadingTrends";
 import Readers from "./pages/Readers";
 import Branches from "./pages/Branches";
-import Collection from "./pages/Collection";
+import DataPipeline from "./pages/DataPipeline";
 import DataQuality from "./pages/DataQuality";
 import Reports from "./pages/Reports";
 
@@ -36,8 +35,7 @@ function App() {
                             <Route path="/books" element={<Books />} />
                             <Route path="/readers" element={<Readers />} />
                             <Route path="/branches" element={<Branches />} />
-                            <Route path="/reading-trends" element={<ReadingTrends />} />
-                            <Route path="/collection" element={<Collection />} />
+                            <Route path="/data-pipeline" element={<DataPipeline />} />
                             <Route path="/data-quality" element={<DataQuality />} />
                             <Route path="/reports" element={<Reports />} />
                             <Route path="*" element={<Navigate to="/" replace />} />

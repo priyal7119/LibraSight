@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from "react";
-import { Users } from "lucide-react";
+import { Users, ArrowUpRight, Award, TrendingUp } from "lucide-react";
 import DataTable from "../components/DataTable";
 import ChartCard from "../components/ChartCard";
 import StatusBadge from "../components/StatusBadge";
@@ -57,6 +57,24 @@ function Readers() {
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
     }, [readerTypes]);
+
+    const kpiMetrics = useMemo(() => {
+        const totalTransactions = normalizedTypes.reduce(
+            (sum, item) => sum + (Number(item.count) || 0),
+            0
+        );
+        const topCategory = normalizedTypes.length > 0 ? normalizedTypes[0].name : "N/A";
+        const highestCategoryTransactions =
+            normalizedTypes.length > 0 ? Number(normalizedTypes[0].count) || 0 : 0;
+        const distinctCategories = normalizedTypes.length;
+
+        return {
+            totalTransactions,
+            topCategory,
+            highestCategoryTransactions,
+            distinctCategories,
+        };
+    }, [normalizedTypes]);
 
     if (loading) {
         return (
@@ -149,31 +167,85 @@ function Readers() {
                 <ChartCard
                     title="Reader Type — Transaction Volume"
                     subtitle="Circulation counts broken down by membership category"
+                    className="reader-volume-card"
                 >
-                    <div style={{ width: "100%", height: 280 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
-                                data={normalizedTypes}
-                                margin={{ top: 10, right: 20, left: -10, bottom: 0 }}
-                                layout="vertical"
-                            >
-                                <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" horizontal={false} />
-                                <XAxis type="number" stroke="var(--chart-axis)" fontSize={12} tickLine={false} axisLine={false} />
-                                <YAxis dataKey="name" type="category" stroke="var(--chart-axis)" fontSize={12} tickLine={false} axisLine={false} width={90} />
-                                <Tooltip
-                                    contentStyle={{
-                                        backgroundColor: "var(--chart-tooltip-bg)",
-                                        borderRadius: "12px",
-                                        border: "1px solid var(--chart-tooltip-border)",
-                                        boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
-                                        color: "var(--chart-tooltip-text)",
-                                        fontSize: "13px",
-                                    }}
-                                    formatter={(v) => [`${v} Transactions`, "Volume"]}
-                                />
-                                <Bar dataKey="count" fill="var(--primary)" radius={[0, 6, 6, 0]} maxBarSize={32} />
-                            </BarChart>
-                        </ResponsiveContainer>
+                    <div className="reader-volume-wrap">
+                        <div className="reader-volume-chart-visual">
+                            <ResponsiveContainer width="100%" height={280}>
+                                <BarChart
+                                    data={normalizedTypes}
+                                    margin={{ top: 10, right: 20, left: -10, bottom: 0 }}
+                                    layout="vertical"
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" horizontal={false} />
+                                    <XAxis type="number" stroke="var(--chart-axis)" fontSize={12} tickLine={false} axisLine={false} />
+                                    <YAxis dataKey="name" type="category" stroke="var(--chart-axis)" fontSize={12} tickLine={false} axisLine={false} width={90} />
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: "var(--chart-tooltip-bg)",
+                                            borderRadius: "12px",
+                                            border: "1px solid var(--chart-tooltip-border)",
+                                            boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+                                            color: "var(--chart-tooltip-text)",
+                                            fontSize: "13px",
+                                        }}
+                                        formatter={(v) => [`${v} Transactions`, "Volume"]}
+                                    />
+                                    <Bar dataKey="count" fill="var(--primary)" radius={[0, 6, 6, 0]} maxBarSize={32} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        {/* 4 KPI cards row directly below the chart & x-axis */}
+                        <div className="reader-kpi-grid">
+                            <div className="reader-kpi-card">
+                                <div className="reader-kpi-card__header">
+                                    <span className="reader-kpi-card__label">Total Transactions</span>
+                                    <div className="reader-kpi-card__icon">
+                                        <ArrowUpRight size={14} />
+                                    </div>
+                                </div>
+                                <div className="reader-kpi-card__value">
+                                    {kpiMetrics.totalTransactions.toLocaleString()}
+                                </div>
+                            </div>
+
+                            <div className="reader-kpi-card">
+                                <div className="reader-kpi-card__header">
+                                    <span className="reader-kpi-card__label">Top Reader Category</span>
+                                    <div className="reader-kpi-card__icon">
+                                        <Award size={14} />
+                                    </div>
+                                </div>
+                                <div className="reader-kpi-card__value" title={kpiMetrics.topCategory}>
+                                    {kpiMetrics.topCategory}
+                                </div>
+                            </div>
+
+                            <div className="reader-kpi-card">
+                                <div className="reader-kpi-card__header">
+                                    <span className="reader-kpi-card__label">Highest Category Transactions</span>
+                                    <div className="reader-kpi-card__icon">
+                                        <TrendingUp size={14} />
+                                    </div>
+                                </div>
+                                <div className="reader-kpi-card__value">
+                                    {kpiMetrics.highestCategoryTransactions.toLocaleString()}
+                                </div>
+                            </div>
+
+                            <div className="reader-kpi-card">
+                                <div className="reader-kpi-card__header">
+                                    <span className="reader-kpi-card__label">Reader Categories</span>
+                                    <div className="reader-kpi-card__icon">
+                                        <Users size={14} />
+                                    </div>
+                                </div>
+                                <div className="reader-kpi-card__value">
+                                    {kpiMetrics.distinctCategories}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </ChartCard>
 

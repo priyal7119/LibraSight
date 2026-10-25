@@ -10,11 +10,31 @@ import {
 import { EmptyState } from "../components/LoadingErrorState";
 
 const STATUS_COLORS = {
-    RETURNED: "#10b981", // Emerald
-    ACTIVE: "#7c3aed",   // Purple primary
-    OVERDUE: "#ef4444",  // Red
-    LOST: "#64748b",     // Slate
-    RENEWED: "#3b82f6",  // Blue
+    ACTIVE: "#7c3aed",
+    AUDIOBOOK_LISTEN: "#9b5de5",
+    CATALOG_VIEW: "#3b82f6",
+    EBOOK_READ: "#10b981",
+    OVERDUE: "#ef4444",
+    RENEWAL_REQUEST: "#f59e0b",
+    RESERVATION_REQUEST: "#8b5cf6",
+    RETURNED: "#10b981",
+    REVIEW_SUBMITTED: "#14b8a6",
+    WISHLIST_ADD: "#a78bfa",
+    LOST: "#64748b",
+};
+
+const STATUS_LABELS = {
+    ACTIVE: "Active",
+    AUDIOBOOK_LISTEN: "Audiobook Listen",
+    CATALOG_VIEW: "Catalog View",
+    EBOOK_READ: "E-book Read",
+    OVERDUE: "Overdue",
+    RENEWAL_REQUEST: "Renewal Request",
+    RESERVATION_REQUEST: "Reservation Request",
+    RETURNED: "Returned",
+    REVIEW_SUBMITTED: "Review Submitted",
+    WISHLIST_ADD: "Wishlist Add",
+    LOST: "Lost",
 };
 
 function StatusDistributionChart({ data = [] }) {
@@ -32,7 +52,11 @@ function StatusDistributionChart({ data = [] }) {
     });
 
     const chartData = Object.entries(normalized)
-        .map(([name, value]) => ({ name, value }))
+        .map(([name, value]) => ({
+            name,
+            value,
+            label: STATUS_LABELS[name] || name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+        }))
         .filter((d) => d.value > 0)
         .sort((a, b) => b.value - a.value);
 
@@ -71,13 +95,23 @@ function StatusDistributionChart({ data = [] }) {
                     />
                     <Legend
                         verticalAlign="bottom"
-                        height={36}
+                        height={70}
                         iconType="circle"
-                        formatter={(val) => (
-                            <span style={{ color: "var(--text-secondary)", fontSize: "12px", marginRight: 8 }}>
-                                {val}
-                            </span>
-                        )}
+                        wrapperStyle={{
+                            paddingTop: 10,
+                            display: "flex",
+                            flexWrap: "wrap",
+                            justifyContent: "center",
+                            rowGap: 8,
+                        }}
+                        formatter={(val) => {
+                            const matched = chartData.find((entry) => entry.name === val);
+                            return (
+                                <span style={{ color: "var(--text-secondary)", fontSize: "12px", marginRight: 10 }}>
+                                    {matched?.label || val}
+                                </span>
+                            );
+                        }}
                     />
                 </PieChart>
             </ResponsiveContainer>

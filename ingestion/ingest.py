@@ -1,6 +1,6 @@
 from pathlib import Path
 import pandas as pd
-from readers import get_raw_file,read_input_file
+from ingestion.readers import get_raw_file, read_input_file
 
 # --------------------------------------------------
 # 1. Define project paths

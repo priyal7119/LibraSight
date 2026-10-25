@@ -119,6 +119,187 @@ def parse_dates(series):
     return result
 
 
+def _build_combined_json_mapping(json_df):
+    """
+    Map the digital-events JSON payload into the same schema shape as the
+    CSV library dataset, so it can pass through the same cleaning pipeline.
+    """
+    if json_df is None or json_df.empty:
+        return pd.DataFrame(columns=EXPECTED_COLUMNS + ["source"])
+
+    flat = json_df.copy()
+    flat["device_type"] = flat.get("device.type")
+    flat["device_os"] = flat.get("device.os")
+    flat["device_browser"] = flat.get("device.browser")
+    flat["device_app_version"] = flat.get("device.app_version")
+    flat["payload_obj"] = flat.apply(
+        lambda row: {
+            col.split(".", 1)[1]: row[col]
+            for col in row.index
+            if str(col).startswith("payload.") and pd.notna(row[col])
+        },
+        axis=1,
+    )
+
+    mapped = pd.DataFrame(index=flat.index)
+    mapped["transaction_id"] = flat["event_id"]
+    mapped["reader_id"] = flat.get("reader_id", pd.Series([None] * len(flat), index=flat.index))
+    mapped["reader_name"] = flat.get("reader_id", pd.Series([None] * len(flat), index=flat.index))
+    mapped["age"] = pd.NA
+    mapped["gender"] = pd.NA
+    mapped["reader_type"] = pd.NA
+    mapped["membership_date"] = pd.NA
+    mapped["home_branch_id"] = flat.get("branch_id", pd.Series([None] * len(flat), index=flat.index))
+    mapped["book_id"] = flat.get("book_id", pd.Series([None] * len(flat), index=flat.index))
+    mapped["isbn"] = pd.NA
+    mapped["book_title"] = pd.NA
+    mapped["author"] = pd.NA
+    mapped["genre"] = pd.NA
+    mapped["publication_year"] = pd.NA
+    mapped["language"] = pd.NA
+    mapped["format"] = pd.NA
+    mapped["publisher"] = pd.NA
+    mapped["branch_id"] = flat.get("branch_id", pd.Series([None] * len(flat), index=flat.index))
+    mapped["branch_name"] = pd.NA
+    mapped["city"] = pd.NA
+    mapped["area"] = pd.NA
+    mapped["library_type"] = flat.get("source_system", pd.Series([None] * len(flat), index=flat.index))
+    mapped["branch_capacity"] = pd.NA
+    mapped["checkout_date"] = pd.to_datetime(flat["event_timestamp"], errors="coerce")
+    mapped["due_date"] = pd.NaT
+    mapped["return_date"] = pd.NaT
+    mapped["transaction_status"] = flat["event_type"]
+    mapped["renewal_count"] = flat["payload_obj"].apply(
+        lambda value: value.get("renewal_number") if isinstance(value, dict) else None
+    )
+    mapped["reservation_flag"] = flat["event_type"].apply(
+        lambda value: "reservation" in str(value or "").lower()
+    )
+    mapped["reservation_count"] = flat["payload_obj"].apply(
+        lambda value: value.get("queue_position") if isinstance(value, dict) else None
+    )
+    if "payload.reservation_status" in flat.columns:
+        mapped["reservation_flag"] = flat["payload.reservation_status"].apply(
+            lambda value: str(value or "").lower() in {"fulfilled", "pending", "waiting"}
+        )
+    mapped["checkout_method"] = flat.get("source_system", pd.Series([None] * len(flat), index=flat.index))
+    mapped["fine_amount"] = pd.NA
+    mapped["total_copies"] = pd.NA
+    mapped["available_copies"] = pd.NA
+    mapped["collection_status"] = pd.NA
+    mapped["source"] = "json"
+
+    return mapped.reindex(columns=EXPECTED_COLUMNS + ["source"])
+
+
+def build_combined_source_dataframe():
+    """
+    Read the original CSV and the JSON event feed, map the JSON data into the
+    canonical CSV schema, and return a combined DataFrame that can be run
+    through the same cleaning/transformation pipeline as the CSV data.
+    """
+    from ingestion.readers import get_raw_file, get_json_source_file, read_input_file
+
+    csv_df = read_input_file(get_raw_file())
+    csv_df = csv_df.copy()
+    csv_df["source"] = "csv"
+
+    json_df = read_input_file(get_json_source_file())
+    json_mapped = _build_combined_json_mapping(json_df)
+
+    combined_columns = list(dict.fromkeys(list(csv_df.columns) + list(json_mapped.columns)))
+    csv_aligned = csv_df.reindex(columns=combined_columns)
+    json_aligned = json_mapped.reindex(columns=combined_columns)
+
+    combined = pd.concat(
+        [csv_aligned, json_aligned],
+        ignore_index=True,
+        sort=False,
+    )
+
+    return combined
+
+
+def clean_combined_source_dataframe():
+    """
+    Apply the same normalization and cleaning rules used for the CSV pipeline to
+    the combined CSV + JSON dataset before analytics are derived.
+    """
+    combined = build_combined_source_dataframe()
+
+    numeric_columns = [
+        "age",
+        "publication_year",
+        "branch_capacity",
+        "renewal_count",
+        "reservation_count",
+        "fine_amount",
+        "total_copies",
+        "available_copies",
+    ]
+
+    for column in numeric_columns:
+        if column in combined.columns:
+            combined[column] = pd.to_numeric(combined[column], errors="coerce")
+
+    date_columns = ["membership_date", "checkout_date", "due_date", "return_date"]
+    for column in date_columns:
+        if column in combined.columns:
+            if column == "checkout_date":
+                combined[column] = pd.to_datetime(
+                    combined[column],
+                    errors="coerce",
+                    utc=True,
+                ).dt.tz_localize(None)
+            else:
+                combined[column] = parse_dates(combined[column])
+
+    text_columns = [
+        "transaction_id",
+        "reader_id",
+        "reader_name",
+        "gender",
+        "reader_type",
+        "home_branch_id",
+        "book_id",
+        "isbn",
+        "book_title",
+        "author",
+        "genre",
+        "language",
+        "format",
+        "publisher",
+        "branch_id",
+        "branch_name",
+        "city",
+        "area",
+        "library_type",
+        "transaction_status",
+        "reservation_flag",
+        "checkout_method",
+        "collection_status",
+        "source",
+    ]
+
+    for column in text_columns:
+        if column in combined.columns:
+            combined[column] = combined[column].astype("string").str.strip()
+
+    if "gender" in combined.columns:
+        gender_mapping = {
+            "M": "Male",
+            "F": "Female",
+            "male": "Male",
+            "female": "Female",
+        }
+        combined["gender"] = combined["gender"].replace(gender_mapping)
+
+    if "reservation_flag" in combined.columns:
+        combined["reservation_flag"] = combined["reservation_flag"].astype(str).str.title()
+
+    return combined.sort_values(by=["transaction_id"]).reset_index(drop=True)
+
+
 # ============================================================
 # MAIN TRANSFORMATION
 # ============================================================
@@ -465,7 +646,7 @@ def main():
     invalid_publication_year_count = (
         (
             (df["publication_year"] < 1000)
-            | (df["publication_year"] > 2025)
+            | (df["publication_year"] > 2026)
         )
         & df["publication_year"].notna()
     ).sum()

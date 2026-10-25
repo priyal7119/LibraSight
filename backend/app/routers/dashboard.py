@@ -1,8 +1,14 @@
+import os
+import sys
 from datetime import date
 from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 from app.database import get_db
 
@@ -32,6 +38,8 @@ def _build_filter_clauses(
     if year is not None:
         conditions.append("d.year = :year")
         params["year"] = int(year)
+    else:
+        conditions.append("d.year <= 2026")
 
     if branch_id:
         conditions.append("br.branch_id = :branch_id")
@@ -83,6 +91,47 @@ def dashboard_summary(
 
     result = db.execute(query, params).mappings().one()
     return dict(result)
+
+
+@router.get("/combined-sources")
+def dashboard_combined_sources():
+    """
+    Load both the CSV library dataset and the digital-events JSON source,
+    returning a dashboard-safe summary without changing the primary warehouse
+    pipeline used by the existing CSV-based analytics.
+    """
+    from ingestion.readers import load_combined_sources
+
+    return load_combined_sources()
+
+
+@router.get("/source-summary")
+def dashboard_source_summary():
+    return dashboard_combined_sources()
+
+
+@router.get("/combined-analytics")
+def dashboard_combined_analytics(
+    year: Optional[int] = Query(None),
+    branch_id: Optional[str] = Query(None),
+    genre: Optional[str] = Query(None),
+    start_date: Optional[date] = Query(None),
+    end_date: Optional[date] = Query(None),
+):
+    """
+    Return a dashboard-safe analytics payload built from both the legacy CSV
+    dataset and the digital-events JSON source. This is additive and does not
+    overwrite the current warehouse-backed /summary route.
+    """
+    from ingestion.readers import build_combined_dashboard_payload
+
+    return build_combined_dashboard_payload(
+        year=year,
+        branch_id=branch_id,
+        genre=genre,
+        start_date=start_date,
+        end_date=end_date,
+    )
 
 
 # ============================================================
@@ -195,6 +244,31 @@ def dashboard_analytics(
     """)
     res_summary = dict(db.execute(res_query, params).mappings().one())
 
+    # 2b. Monthly Reservation Trend
+    res_trend_query = text(f"""
+        SELECT
+            d.year,
+            d.month,
+            d.month_name,
+            COALESCE(SUM(f.reservation_count), 0) AS total_reservations,
+            COUNT(CASE WHEN f.reservation_flag THEN 1 END) AS transactions_with_reservations,
+            COUNT(f.transaction_key) AS total_transactions,
+            ROUND(
+                CASE WHEN COUNT(f.transaction_key) > 0
+                     THEN (COUNT(CASE WHEN f.reservation_flag THEN 1 END)::NUMERIC / COUNT(f.transaction_key)::NUMERIC) * 100
+                     ELSE 0
+                END, 1
+            ) AS hold_rate
+        FROM fact_library_transaction f
+        JOIN dim_date d ON f.date_key = d.date_key
+        JOIN dim_branch br ON f.branch_key = br.branch_key
+        JOIN dim_book b ON f.book_key = b.book_key
+        {where_sql}
+        GROUP BY d.year, d.month, d.month_name
+        ORDER BY d.year, d.month;
+    """)
+    res_trend = [dict(r) for r in db.execute(res_trend_query, params).mappings().all()]
+
     # 3. Fine Trend
     fine_query = text(f"""
         SELECT
@@ -215,10 +289,10 @@ def dashboard_analytics(
     # 4. Collection Health Aggregates
     coll_query = text(f"""
         SELECT
-            COALESCE(SUM(f.total_copies), 0) AS total_copies,
-            COALESCE(SUM(f.available_copies), 0) AS available_copies,
-            ROUND(AVG(f.available_copies), 2) AS avg_available_copies,
-            COUNT(CASE WHEN f.available_copies = 0 THEN 1 END) AS zero_available_count
+            COALESCE(SUM(CASE WHEN f.total_copies IS NOT NULL THEN f.total_copies ELSE 0 END), 0) AS total_copies,
+            COALESCE(SUM(CASE WHEN f.available_copies IS NOT NULL THEN f.available_copies ELSE 0 END), 0) AS available_copies,
+            ROUND(AVG(CASE WHEN f.available_copies IS NOT NULL THEN f.available_copies END), 2) AS avg_available_copies,
+            COUNT(CASE WHEN f.available_copies IS NOT NULL AND f.available_copies = 0 AND f.total_copies IS NOT NULL AND f.total_copies > 0 THEN 1 END) AS zero_available_count
         FROM fact_library_transaction f
         JOIN dim_date d ON f.date_key = d.date_key
         JOIN dim_branch br ON f.branch_key = br.branch_key
@@ -304,6 +378,7 @@ def dashboard_analytics(
     return {
         "checkout_methods": methods,
         "reservation_summary": res_summary,
+        "reservation_trend": res_trend,
         "fine_trend": fine_trend,
         "collection_health": coll_health,
         "genres": genres,

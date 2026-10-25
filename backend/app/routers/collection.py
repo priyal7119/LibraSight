@@ -13,8 +13,10 @@ def get_collection_summary(db: Session = Depends(get_db)):
     stats_query = text("""
         SELECT
             COUNT(*) AS total_transactions,
-            ROUND(AVG(available_copies), 2) AS avg_available_copies,
-            COUNT(CASE WHEN available_copies = 0 THEN 1 END) AS zero_available_count
+            COALESCE(SUM(CASE WHEN total_copies IS NOT NULL THEN total_copies ELSE 0 END), 0) AS total_copies,
+            COALESCE(SUM(CASE WHEN available_copies IS NOT NULL THEN available_copies ELSE 0 END), 0) AS available_copies,
+            ROUND(AVG(CASE WHEN available_copies IS NOT NULL THEN available_copies END), 2) AS avg_available_copies,
+            COUNT(CASE WHEN available_copies IS NOT NULL AND available_copies = 0 AND total_copies IS NOT NULL AND total_copies > 0 THEN 1 END) AS zero_available_count
         FROM fact_library_transaction;
     """)
     stats = db.execute(stats_query).mappings().one()
@@ -57,9 +59,15 @@ def get_collection_summary(db: Session = Depends(get_db)):
     """)
     reservation_records = db.execute(reservation_query).mappings().all()
 
+    total_copies = float(stats["total_copies"] or 0)
+    available_copies = float(stats["available_copies"] or 0)
+
     return {
         "collection_status": "Healthy",
         "total_transactions": stats["total_transactions"] or 0,
+        "total_copies": total_copies,
+        "available_copies": available_copies,
+        "unavailable_copies": max(0.0, total_copies - available_copies),
         "avg_available_copies": float(stats["avg_available_copies"] or 0),
         "zero_available_count": stats["zero_available_count"] or 0,
         "low_stock_alerts": [dict(r) for r in low_stock_records],

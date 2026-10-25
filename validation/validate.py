@@ -321,7 +321,7 @@ def validate_data():
         publication_year.notna() &
         (
             (publication_year < 1000) |
-            (publication_year > 2025)
+            (publication_year > 2026)
         )
     )
 

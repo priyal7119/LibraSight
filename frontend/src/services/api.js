@@ -34,6 +34,9 @@ export const getDashboardStatus = (params = {}) =>
 export const getDashboardAnalytics = (params = {}) =>
     API.get("/dashboard/analytics", { params: cleanParams(params) });
 
+export const getDashboardCombinedAnalytics = (params = {}) =>
+    API.get("/dashboard/combined-analytics", { params: cleanParams(params) });
+
 export const getFilterYears = () => API.get("/dashboard/years");
 export const globalSearch = (q) => API.get("/dashboard/search", { params: { q } });
 

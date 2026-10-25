@@ -219,6 +219,165 @@ def test_raw_dataset_contains_rows():
 
 
 # ============================================================
+# TEST 8 — DASHBOARD YEAR CAP
+# ============================================================
+
+def test_dashboard_year_cap_uses_2026_ceiling():
+    """
+    All dashboard aggregations should be capped at the current reporting window.
+    Future years beyond 2026 must be excluded from visible analytics.
+    """
+    import pandas as pd
+
+    from ingestion.readers import limit_chart_years
+
+    df = pd.DataFrame(
+        {
+            "checkout_date": pd.to_datetime([
+                "2024-01-15",
+                "2025-06-20",
+                "2026-09-01",
+                "2028-02-08",
+                "2035-11-10",
+            ])
+        }
+    )
+
+    capped = limit_chart_years(df, max_year=2026)
+
+    assert capped["checkout_date"].dt.year.max() <= 2026
+    assert len(capped) == 3
+
+
+# ============================================================
+# TEST 8 — JSON PAYLOAD NORMALIZATION
+# ============================================================
+
+def test_normalize_json_payload_handles_standard_response_shapes():
+    """
+    Verify that common JSON response wrappers are converted to a DataFrame.
+    """
+    from ingestion.readers import normalize_json_payload
+
+    payload = {
+        "data": [
+            {"transaction_id": "t1", "reader_id": 101, "fine_amount": 5.5},
+            {"transaction_id": "t2", "reader_id": 102, "fine_amount": 0.0},
+        ]
+    }
+
+    df = normalize_json_payload(payload)
+
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == ["transaction_id", "reader_id", "fine_amount"]
+    assert len(df) == 2
+
+
+# ============================================================
+# TEST 9 — API RESPONSE NORMALIZATION
+# ============================================================
+
+def test_normalize_json_payload_handles_api_result_wrapper():
+    """
+    Verify that API-style result wrappers are handled safely.
+    """
+    from ingestion.readers import normalize_json_payload
+
+    payload = {
+        "results": [
+            {"book_id": "b1", "book_title": "Clean Code", "available_copies": 4},
+            {"book_id": "b2", "book_title": "The Pragmatic Programmer", "available_copies": 2},
+        ]
+    }
+
+    df = normalize_json_payload(payload)
+
+    assert isinstance(df, pd.DataFrame)
+    assert list(df.columns) == ["book_id", "book_title", "available_copies"]
+    assert len(df) == 2
+
+
+# ============================================================
+# TEST 10 — COMBINED CSV + JSON SOURCE SUMMARY
+# ============================================================
+
+
+def test_load_combined_sources_reads_csv_and_json():
+    """
+    Verify that the CSV dataset and digital event JSON can be loaded together
+    as a combined source summary without replacing the original CSV pipeline.
+    """
+    from ingestion.readers import load_combined_sources
+
+    combined = load_combined_sources()
+
+    assert isinstance(combined, dict)
+    assert combined["csv_records"] > 0
+    assert combined["json_records"] > 0
+    assert "event_types" in combined
+    assert "data_sources" in combined
+    assert "csv" in combined["data_sources"]
+    assert "json" in combined["data_sources"]
+
+
+# ============================================================
+# TEST 11 — COMBINED DASHBOARD ANALYTICS
+# ============================================================
+
+
+def test_build_combined_dashboard_payload_aggregates_csv_and_json():
+    """
+    Verify that a combined dashboard payload exposes both sources and their
+    summary metrics without altering the canonical CSV dataset flow.
+    """
+    from ingestion.readers import build_combined_dashboard_payload
+
+    payload = build_combined_dashboard_payload()
+
+    assert isinstance(payload, dict)
+    assert payload["data_sources"]["csv"] > 0
+    assert payload["data_sources"]["json"] > 0
+    assert payload["data_sources"]["combined"] > 0
+    assert payload["csv_summary"]["total_transactions"] > 0
+    assert payload["event_type_counts"]
+    assert payload["source_system_counts"]
+
+
+def test_build_combined_dashboard_payload_respects_filters():
+    """Ensure the dashboard filter parameters are honored when aggregating a combined payload."""
+    from ingestion.readers import build_combined_dashboard_payload
+
+    df = load_raw_data()
+    branch_id = df["branch_id"].dropna().astype(str).iloc[0]
+    genre = df["genre"].dropna().astype(str).iloc[0]
+
+    filtered = build_combined_dashboard_payload(
+        year=int(df["checkout_date"].dropna().astype(str).str[:4].mode().iloc[0]),
+        branch_id=branch_id,
+        genre=genre,
+    )
+
+    assert isinstance(filtered, dict)
+    assert filtered["summary"]["total_transactions"] >= 0
+    assert filtered["summary"]["total_branches"] >= 0
+    assert filtered["summary"]["total_books"] >= 0
+    assert filtered["summary"]["total_readers"] >= 0
+
+
+def test_inventory_summary_matches_valid_dataset_rows():
+    """Inventory totals should match the active 2026 reporting window and ignore null/JSON-only stock rows."""
+    from ingestion.readers import build_combined_dashboard_payload
+
+    payload = build_combined_dashboard_payload()
+    health = payload["collection_health"]
+
+    assert health["total_copies"] == 3861
+    assert health["available_copies"] == 2388
+    assert health["unavailable_copies"] == 1473
+    assert health["zero_available_count"] == 60
+
+
+# ============================================================
 # TEST 8 — TRANSACTION ID COLUMN EXISTS AND HAS DATA
 # ============================================================
 

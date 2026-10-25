@@ -1,5 +1,12 @@
+import os
+import sys
+
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 from app.routers import (
     dashboard,
@@ -31,16 +38,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:4173",
-        "http://127.0.0.1:4173",
-        "http://localhost:4174",
-        "http://127.0.0.1:4174",
-        "http://localhost:4175",
-        "http://127.0.0.1:4175",
-    ],
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1):(5173|4173|4174|4175|8000|8001|3000)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

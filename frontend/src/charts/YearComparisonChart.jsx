@@ -7,8 +7,20 @@ import {
     CartesianGrid,
     Tooltip,
     ResponsiveContainer,
+    Cell,
 } from "recharts";
 import { EmptyState } from "../components/LoadingErrorState";
+
+const YEAR_COLORS = [
+    "#7c3aed",
+    "#8b5cf6",
+    "#a78bfa",
+    "#c084fc",
+    "#6d28d9",
+    "#4f46e5",
+    "#10b981",
+    "#f59e0b",
+];
 
 function YearComparisonChart({ data = [] }) {
     // Group transaction counts strictly by year
@@ -23,6 +35,7 @@ function YearComparisonChart({ data = [] }) {
         });
         return Object.entries(map)
             .map(([year, count]) => ({ year: String(year), count }))
+            .filter((item) => Number(item.year) <= 2026)
             .sort((a, b) => Number(a.year) - Number(b.year));
     }, [data]);
 
@@ -65,10 +78,16 @@ function YearComparisonChart({ data = [] }) {
                     />
                     <Bar
                         dataKey="count"
-                        fill="var(--primary)"
                         radius={[8, 8, 0, 0]}
                         maxBarSize={48}
-                    />
+                    >
+                        {yearlyTotals.map((entry, index) => (
+                            <Cell
+                                key={`${entry.year}-${index}`}
+                                fill={YEAR_COLORS[index % YEAR_COLORS.length]}
+                            />
+                        ))}
+                    </Bar>
                 </BarChart>
             </ResponsiveContainer>
         </div>
